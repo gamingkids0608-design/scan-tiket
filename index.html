@@ -56,6 +56,25 @@
   .res .big{font-size:20px;font-weight:800;margin-top:6px}
   .res .nm{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:700;margin-top:4px;color:var(--ink)}
   .res .sm{font-size:13px;margin-top:4px}
+  .res .pf{width:96px;height:96px;border-radius:50%;object-fit:cover;display:block;margin:2px auto 8px;box-shadow:0 0 0 3px #fff,0 0 0 5px currentColor}
+  /* verifikasi panitia */
+  .ver{position:fixed;inset:0;z-index:50;background:rgba(15,40,27,.82);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px}
+  .vbox{width:100%;max-width:420px;background:var(--cream);border-radius:26px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4);animation:vin .22s ease-out}
+  @keyframes vin{from{transform:translateY(18px) scale(.97);opacity:0}to{transform:none;opacity:1}}
+  .vhead{background:var(--green);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;font:800 12px Inter,sans-serif;letter-spacing:.12em}
+  .vhead span:last-child{background:var(--gold);color:#3a2a06;padding:4px 10px;border-radius:999px;letter-spacing:.08em}
+  .vstripe{height:4px;background:linear-gradient(90deg,var(--maroon) 0 33%,var(--gold) 33% 66%,var(--green) 66%)}
+  .vbody{padding:22px 20px 18px;text-align:center}
+  .vfoto{width:min(62vw,240px);height:min(62vw,240px);margin:0 auto;border-radius:50%;overflow:hidden;box-shadow:0 0 0 5px #fff,0 0 0 8px var(--gold),0 12px 30px rgba(0,0,0,.18);background:var(--green);display:grid;place-items:center;color:#fff;font:800 64px Inter,sans-serif}
+  .vfoto img{width:100%;height:100%;object-fit:cover;display:block}
+  .vnm{font:700 34px/1.1 'Cormorant Garamond',serif;color:var(--ink);margin-top:18px;word-break:break-word}
+  .vkd{font:700 13px 'JetBrains Mono',monospace;color:var(--mute);margin-top:4px}
+  .vnof{display:inline-block;margin-top:8px;font-size:12px;font-weight:700;color:var(--orange);background:#fdf1dc;padding:4px 10px;border-radius:999px}
+  .vq{margin-top:14px;font-size:15px;font-weight:600;color:var(--ink)}
+  .vbtn{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;margin-top:16px}
+  .vbtn button{border:0;border-radius:16px;padding:18px 10px;font:800 17px Inter,sans-serif;cursor:pointer}
+  .vbtn .no{background:#fbe5e3;color:#b3261e}
+  .vbtn .yes{background:var(--green);color:#fff;box-shadow:0 6px 16px rgba(15,95,55,.3)}
   .res.idle{background:#fff;color:var(--mute);border:2px dashed var(--line)}
   .res.ok{background:#e3f4ea;color:var(--green);border-color:#9fd0b2}
   .res.dup{background:#fdf1dc;color:#9a6200;border-color:#f0cf8c}
@@ -109,6 +128,17 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<div id="ver" class="ver hide"><div class="vbox">
+  <div class="vhead"><span>VERIFIKASI WAJAH</span><span>PANITIA</span></div><div class="vstripe"></div>
+  <div class="vbody">
+    <div class="vfoto" id="vFoto"></div>
+    <div class="vnm" id="vNm"></div>
+    <div class="vkd" id="vKd"></div>
+    <div id="vNof"></div>
+    <div class="vq">Apakah orang di depan Anda sesuai foto?</div>
+    <div class="vbtn"><button id="vNo" class="no">✕  Bukan</button><button id="vYes" class="yes">✓  Sesuai, catat</button></div>
+  </div>
+</div></div>
 
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbw_vgVzfZj8hOciHzvvF0llkaY8UqUPGWp1Ga99vZOwS0P2fT_uV7MOKd4NSMMeUkHH/exec';
@@ -141,6 +171,10 @@ const norm = s => { const u = String(s || '').toUpperCase(); const m = u.match(/
 let DB = LS.get('tiketDB', {});          // kode -> {nama, kategori, status, waktu}
 let QUEUE = LS.get('tiketQueue', []);    // check-in yang belum terkirim ke sheet
 let lastSync = 0, syncing = false;
+let FOTO = LS.get('tiketFoto', {}), FV = LS.get('tiketFV', '');
+const isPanitia = p => /panitia/i.test(String((p && p.kategori) || ''));
+const pfImg = kode => FOTO[kode] ? `<img class="pf" src="${FOTO[kode]}" alt="">` : '';
+async function loadFotos(fv) { try { const r = await api({ action: 'fotos', pin: PIN }); if (r && r.foto) { FOTO = r.foto; FV = fv || r.fv; try { LS.set('tiketFoto', FOTO); LS.set('tiketFV', FV); } catch (e) {} } } catch (e) {} }
 function saveDB() { LS.set('tiketDB', DB); }
 function saveQ() { LS.set('tiketQueue', QUEUE); renderSync(); }
 async function syncDB() {
@@ -156,6 +190,7 @@ async function syncDB() {
       if (pending.has(p.kode) && old) { next[p.kode].status = old.status; next[p.kode].waktu = old.waktu; }
     });
     DB = next; saveDB(); lastSync = Date.now();
+    if ((r.fv || '') !== FV) { if (r.fv && !r.fv.startsWith('0-')) loadFotos(r.fv); else { FOTO = {}; FV = r.fv || ''; try { LS.set('tiketFoto', FOTO); LS.set('tiketFV', FV); } catch (e) {} } }
   } catch (e) {}
   syncing = false; renderStats(); renderSync();
 }
@@ -224,7 +259,7 @@ $('pinForm').onsubmit = e => {
 
 function addHist(st, nama, kode) {
   const col = st === 'ok' ? '#1b7a4b' : st === 'dup' ? '#d9a441' : '#b3261e';
-  hist.unshift({ col, nama: nama || 'Tidak terdaftar', kode: kode || '', now: jam() });
+  hist.unshift({ col, nama: (nama || 'Tidak terdaftar') + (st === 'tolak' ? ' — DITOLAK' : ''), kode: kode || '', now: jam() });
   hist = hist.slice(0, 15);
   $('hist').innerHTML = hist.map(h => `<div class="hrow"><span class="dot" style="background:${h.col}"></span><span class="n">${esc(h.nama)}</span><span class="t">${esc(h.kode)}</span><span class="t">${h.now}</span></div>`).join('');
 }
@@ -233,12 +268,16 @@ function show(st, p, kode, waktu) {
   box.classList.remove('flash'); void box.offsetWidth;
   if (st === 'ok') {
     box.className = 'res ok flash';
-    box.innerHTML = `<div class="ic">✓</div><div class="big">Berhasil — selamat datang!</div><div class="nm">${esc(p.nama)}</div><div class="sm">${esc(p.kategori || '')} · ${esc(kode)} · ${esc(waktu)}</div>`;
+    box.innerHTML = `${pfImg(kode) || '<div class="ic">✓</div>'}<div class="big">Berhasil — selamat datang!</div><div class="nm">${esc(p.nama)}</div><div class="sm">${esc(p.kategori || '')} · ${esc(kode)} · ${esc(waktu)}</div>`;
     beep(1200, 90);
   } else if (st === 'dup') {
     box.className = 'res dup flash';
-    box.innerHTML = `<div class="ic">⚠</div><div class="big">Tiket sudah dipakai</div><div class="nm">${esc(p.nama)}</div><div class="sm">Check-in pertama: ${esc(waktu || '-')}</div>`;
+    box.innerHTML = `${pfImg(kode) || '<div class="ic">⚠</div>'}<div class="big">Tiket sudah dipakai</div><div class="nm">${esc(p.nama)}</div><div class="sm">Check-in pertama: ${esc(waktu || '-')}</div>`;
     beep(440, 300);
+  } else if (st === 'tolak') {
+    box.className = 'res bad flash';
+    box.innerHTML = `${pfImg(kode) || '<div class="ic">✕</div>'}<div class="big">Ditolak — bukan pemilik tiket</div><div class="nm">${esc(p.nama)}</div><div class="sm">Tiket ${esc(kode)} tidak dicatat. Minta panitia ybs. datang sendiri.</div>`;
+    beep(220, 500);
   } else if (st === 'wait') {
     box.className = 'res idle';
     box.innerHTML = '<div class="ic">…</div><div class="big">Memeriksa ke server</div><div class="sm">Tiket belum ada di data perangkat ini</div>';
@@ -253,8 +292,31 @@ function show(st, p, kode, waktu) {
 }
 
 // ====== PROSES SCAN (instan dari data lokal) ======
-let last = '', lastAt = 0;
+let last = '', lastAt = 0, VER = null;
+function catat(p, kode) {
+  p.status = 'Sudah masuk'; p.waktu = jam(); saveDB();
+  QUEUE.push({ kode, jam: p.waktu }); saveQ(); flush();
+  return show('ok', p, kode, p.waktu);
+}
+function verify(p, kode) {
+  VER = { p, kode };
+  $('vFoto').innerHTML = FOTO[kode] ? `<img src="${FOTO[kode]}" alt="">` : esc(String(p.nama || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase());
+  $('vNm').textContent = p.nama || '';
+  $('vKd').textContent = kode + ' · ' + (p.kategori || '');
+  $('vNof').innerHTML = FOTO[kode] ? '' : '<span class="vnof">Foto belum diunggah — cek kartu identitas</span>';
+  $('ver').classList.remove('hide');
+  try { document.activeElement && document.activeElement.blur(); } catch (e) {}
+  beep(880, 120);
+}
+function tutupVer(ok) {
+  if (!VER) return; const { p, kode } = VER; VER = null;
+  $('ver').classList.add('hide'); last = kode; lastAt = Date.now();
+  if (ok) catat(p, kode); else show('tolak', p, kode);
+}
+$('vYes').onclick = () => tutupVer(true);
+$('vNo').onclick = () => tutupVer(false);
 async function cek(raw) {
+  if (VER) return;
   const kode = norm(raw); if (!kode) return;
   const now = Date.now();
   if (kode === last && now - lastAt < 2500) return;   // QR yang sama jangan diproses berulang
@@ -262,9 +324,8 @@ async function cek(raw) {
   const p = DB[kode];
   if (p) {
     if (p.status === 'Sudah masuk') return show('dup', p, kode, p.waktu);
-    p.status = 'Sudah masuk'; p.waktu = jam(); saveDB();
-    QUEUE.push({ kode, jam: p.waktu }); saveQ(); flush();
-    return show('ok', p, kode, p.waktu);
+    if (isPanitia(p)) return verify(p, kode);
+    return catat(p, kode);
   }
   // tidak ada di data lokal: mungkin peserta baru — tanya server
   show('wait');
