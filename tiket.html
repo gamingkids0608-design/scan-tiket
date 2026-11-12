@@ -66,6 +66,19 @@
   .crop input[type=range]{width:240px;margin:16px auto 4px;display:block;accent-color:var(--green)}
   .crop .hint{font-size:12px;color:var(--mute);margin-bottom:14px}
   .crop .btns{display:grid;gap:8px}
+  .nt{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(15,40,27,.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+  .nt.show{display:flex}
+  .ntb{width:100%;max-width:380px;background:var(--cream);border-radius:26px;overflow:hidden;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);animation:ntin .35s cubic-bezier(.2,1.4,.4,1)}
+  @keyframes ntin{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+  .nth{padding:28px 20px 22px;color:#fff;background:linear-gradient(135deg,var(--green),#1b7a4b)}
+  .nt.bad .nth{background:linear-gradient(135deg,#8f1d16,#c0392b)}
+  .nt.vip .nth{background:linear-gradient(135deg,#8b2a1a,#c8641e)}
+  .ntic{width:84px;height:84px;margin:0 auto;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;font:800 44px Inter,sans-serif;box-shadow:0 0 0 8px rgba(255,255,255,.08)}
+  .ntt{font:800 12px Inter,sans-serif;letter-spacing:.14em;margin-top:14px;opacity:.92}
+  .ntm{font:700 32px/1.15 'Cormorant Garamond',serif;margin-top:6px}
+  .ntd{padding:18px 20px 20px}
+  .ntd .n{font:700 24px 'Cormorant Garamond',serif;color:var(--ink)}
+  .ntd p{font-size:14px;color:var(--mute);margin:6px 0 16px;line-height:1.5}
   .who{flex:1;min-width:0}
   .who .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .who .kd{font:700 12px 'JetBrains Mono',monospace;color:var(--mute)}
@@ -89,6 +102,7 @@
   <nav id="nav" style="display:none"><a href="./">Scan</a><a href="tiket" class="on">Tiket</a></nav>
 </div><div class="stripe"></div></div>
 <div class="wrap" id="root"><div class="msg">Memuat…</div></div>
+<div class="nt" id="nt"><div class="ntb"><div class="nth"><div class="ntic" id="ntic"></div><div class="ntt" id="ntt"></div><div class="ntm" id="ntm"></div></div><div class="ntd"><div class="n" id="ntn"></div><p id="ntp"></p><button class="btn full" id="ntx">Oke, tutup</button></div></div></div>
 <input type="file" id="fotoIn" accept="image/*" style="display:none">
 <div class="modal" id="cropM"><div class="box"><div class="crop">
   <h3 id="cropT">Foto panitia</h3><div class="sub" id="cropS">Atur posisi wajah di tengah lingkaran</div>
@@ -250,7 +264,9 @@ async function showOne(kode) {
     const r = await api({ action: 'tiket', kode });
     if (!r || r.status !== 'ok') { root.innerHTML = `<div class="card msg err">Tiket <b>${esc(kode)}</b> tidak ditemukan.</div>`; return; }
     root.innerHTML = `<div class="one" id="one"><div class="msg">Menyiapkan tiket…</div></div>`;
+    ACARA = r.acara || {};
     await renderOne(document.getElementById('one'), r.tiket, r.acara || {}, false);
+    pantau(r.tiket);
   } catch (e) { root.innerHTML = `<div class="card msg err">Gagal memuat tiket. Cek internet lalu muat ulang.</div>`; }
 }
 
@@ -347,6 +363,28 @@ async function kirimFoto(simpan){ const b=document.getElementById('cropSave'); l
   catch(e){ try{ const r=await api({action:'fotos',pin:PIN}); ok=simpan?(r&&r.foto&&r.foto[CUR.kode]===data):!(r&&r.foto&&r.foto[CUR.kode]); }catch(e2){} if(!ok) toast('Gagal menyimpan foto, cek internet'); }
   b.disabled=false; b.textContent='Simpan foto';
   if(ok){ if(simpan) FOTO[CUR.kode]=data; else delete FOTO[CUR.kode]; CUR.foto=simpan; closeCrop(); renderList(); toast(simpan?'Foto '+CUR.nama+' tersimpan':'Foto dihapus'); }
+}
+function notif(kind,t,waktu){ const k=String(t.kategori||''), pan=/panitia/i.test(k), vip=/vip/i.test(k), nm=esc((ACARA&&ACARA.nama)||'ÔTELION IV');
+  const m=document.getElementById('nt'); m.className='nt show'+(kind==='bad'?' bad':(vip&&!pan)?' vip':'');
+  const set=(id,h)=>document.getElementById(id).innerHTML=h;
+  if(kind==='bad'){ set('ntic','✕'); set('ntt','ABSEN DITOLAK'); set('ntm','Verifikasi tidak sesuai'); set('ntp','Petugas menyatakan wajah tidak cocok dengan foto panitia, jadi absen <b>belum dicatat</b>. Silakan temui koordinator registrasi.'); }
+  else if(pan){ set('ntic','✓'); set('ntt','ABSEN DISETUJUI'); set('ntm','Selamat bertugas!'); set('ntp','Kehadiran kamu tercatat pukul <b>'+esc(waktu||'-')+'</b>. Terima kasih sudah bertugas di '+nm+'.'); }
+  else { set('ntic','✓'); set('ntt',vip?'TAMU VIP · CHECK-IN BERHASIL':'CHECK-IN BERHASIL'); set('ntm','Selamat datang!'); set('ntp','Registrasi ulang tercatat pukul <b>'+esc(waktu||'-')+'</b>. Selamat menikmati '+nm+' — Heritage Reimagined.'); }
+  set('ntn',esc(t.nama||''));
+  try{ navigator.vibrate&&navigator.vibrate(kind==='bad'?[220,100,220]:[80,60,80]); }catch(e){}
+  try{ const a=new (window.AudioContext||window.webkitAudioContext)(), o=a.createOscillator(), g=a.createGain(); o.frequency.value=kind==='bad'?260:1046; g.gain.value=.05; o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime+(kind==='bad'?.4:.15)); }catch(e){}
+}
+document.getElementById('ntx').onclick=()=>document.getElementById('nt').classList.remove('show');
+function pantau(t){ let base=null, done=false;
+  const tick=async()=>{ if(done) return;
+    if(document.visibilityState!=='visible'){ setTimeout(tick,2500); return; }
+    try{ const r=await api({action:'cek',kode:t.kode});
+      if(r&&r.status==='ok'){ if(!base) base=r; else {
+        if(!base.masuk&&r.masuk){ notif('ok',t,r.waktu); done=true; return; }
+        if(r.tolak>base.tolak){ base.tolak=r.tolak; notif('bad',t); }
+        if(base.masuk&&!r.masuk) base.masuk=false; } } }catch(e){}
+    setTimeout(tick,4000); };
+  tick();
 }
 function waStat(){const el=document.getElementById('wastat'); if(!el) return; const bisa=LIST.filter(t=>waLink(t.kontak,t,ACARA)).length, sudah=LIST.filter(t=>t.wa).length; el.className='stat'+(sudah>=bisa&&bisa?' g':''); el.innerHTML=`<b>${sudah}<small style="font-size:15px;color:var(--mute)">/${bisa}</small></b><span>Sudah di-WA</span>`;}
 async function setWA(t,on){const old=t.wa; t.wa=on?new Date().toTimeString().slice(0,5)+', '+String(new Date().getDate()).padStart(2,'0')+'/'+String(new Date().getMonth()+1).padStart(2,'0'):''; renderList();
