@@ -63,7 +63,7 @@
   .modal{position:fixed;inset:0;background:rgba(20,30,24,.6);display:none;align-items:flex-start;justify-content:center;padding:24px 14px;overflow:auto;z-index:20}
   .modal.show{display:flex}
   .modal .box{width:100%;max-width:420px}
-  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:.2s;pointer-events:none}
+  .mclose{position:fixed;top:14px;right:14px;z-index:30;width:46px;height:46px;border-radius:50%;border:0;background:#fff;color:#1f2420;font-size:22px;font-weight:800;box-shadow:0 4px 18px rgba(0,0,0,.3);cursor:pointer} .modal .one canvas{width:auto;max-width:100%;max-height:72vh;margin:0 auto} .modal .box{padding-top:40px} .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:.2s;pointer-events:none}
   .toast.show{opacity:1}
   @media (max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}.top img{height:26px}.acts .hide-m{display:none}.top nav a{padding:7px 10px}}
 </style>
@@ -74,7 +74,7 @@
   <nav id="nav" style="display:none"><a href="./">Scan</a><a href="tiket" class="on">Tiket</a></nav>
 </div><div class="stripe"></div></div>
 <div class="wrap" id="root"><div class="msg">Memuat…</div></div>
-<div class="modal" id="modal"><div class="box"><div class="one" id="mbody"></div></div></div>
+<div class="modal" id="modal"><button class="mclose" id="mclose" aria-label="Tutup">✕</button><div class="box"><div class="one" id="mbody"></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -219,7 +219,7 @@ async function renderOne(el, t, acara, withShare){
   el.querySelector('#dl').onclick = () => download(c, fileName(t));
   if(withShare){
     el.querySelector('#cp').onclick = () => navigator.clipboard.writeText(ticketLink(t.kode)).then(()=>toast('Link tiket disalin'));
-    el.querySelector('#cl').onclick = () => document.getElementById('modal').classList.remove('show');
+    el.querySelector('#cl').onclick = closeModal;
   }
 }
 async function showOne(kode) {
@@ -287,9 +287,9 @@ function renderList(){
     <div class="acts"><button class="btn sm ghost" data-v="${i}">Lihat</button><button class="btn sm" data-d="${i}">PNG</button>
     ${wa?`<a class="btn sm gold" href="${esc(wa)}" target="_blank" rel="noopener">WA</a>`:''}</div></div>`;}).join('');
   el.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{const t=LIST[+b.dataset.d]; download(drawTicket(t,ACARA,await assets()),fileName(t));});
-  el.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{const t=LIST[+b.dataset.v]; const m=document.getElementById('modal'); m.classList.add('show'); renderOne(document.getElementById('mbody'),t,ACARA,true);});
+  el.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{const t=LIST[+b.dataset.v]; const m=document.getElementById('modal'); m.classList.add('show'); history.pushState({m:1},''); renderOne(document.getElementById('mbody'),t,ACARA,true);});
 }
-document.getElementById('modal').onclick=e=>{if(e.target.id==='modal')e.target.classList.remove('show');};
+function closeModal(){ const m=document.getElementById('modal'); if(!m.classList.contains('show')) return; m.classList.remove('show'); if(history.state&&history.state.m) history.back(); } document.getElementById('modal').onclick=e=>{if(e.target.id==='modal')closeModal();}; document.getElementById('mclose').onclick=closeModal; document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();}); window.addEventListener('popstate',()=>document.getElementById('modal').classList.remove('show'));
 
 const kode = new URLSearchParams(location.search).get('kode') || ((location.search.match(/TKT-[A-Za-z0-9]{6}/)||[])[0]);
 if (kode) showOne(kode.trim().toUpperCase());
