@@ -296,6 +296,7 @@ function show(st, p, kode, waktu) {
 let last = '', lastAt = 0, VER = null;
 function catat(p, kode) {
   p.status = 'Sudah masuk'; p.waktu = jam(); saveDB();
+  api({ action: 'live', kode, pin: PIN, st: 'ok' }).catch(() => {});
   QUEUE.push({ kode, jam: p.waktu }); saveQ(); flush();
   return show('ok', p, kode, p.waktu);
 }
@@ -312,7 +313,7 @@ function verify(p, kode) {
 function tutupVer(ok) {
   if (!VER) return; const { p, kode } = VER; VER = null;
   $('ver').classList.add('hide'); last = kode; lastAt = Date.now();
-  if (ok) catat(p, kode); else { show('tolak', p, kode); const kirimTolak = (n) => api({ action: 'tolak', kode, pin: PIN }).catch(() => { if (n < 3) setTimeout(() => kirimTolak(n + 1), 3000); }); kirimTolak(0); }
+  if (ok) catat(p, kode); else { show('tolak', p, kode); api({ action: 'live', kode, pin: PIN, st: 'tolak' }).catch(() => {}); const kirimTolak = (n) => api({ action: 'tolak', kode, pin: PIN }).catch(() => { if (n < 3) setTimeout(() => kirimTolak(n + 1), 3000); }); kirimTolak(0); }
 }
 $('vYes').onclick = () => tutupVer(true);
 $('vNo').onclick = () => tutupVer(false);
