@@ -75,6 +75,7 @@
   .vbtn button{border:0;border-radius:16px;padding:18px 10px;font:800 17px Inter,sans-serif;cursor:pointer}
   .vbtn .no{background:#fbe5e3;color:#b3261e}
   .vbtn .yes{background:var(--green);color:#fff;box-shadow:0 6px 16px rgba(15,95,55,.3)}
+  .res .apv{display:inline-block;background:var(--green);color:#fff;font:800 12px Inter,sans-serif;letter-spacing:.12em;padding:6px 14px;border-radius:999px;margin-bottom:4px}
   .res.idle{background:#fff;color:var(--mute);border:2px dashed var(--line)}
   .res.ok{background:#e3f4ea;color:var(--green);border-color:#9fd0b2}
   .res.dup{background:#fdf1dc;color:#9a6200;border-color:#f0cf8c}
@@ -268,11 +269,11 @@ function show(st, p, kode, waktu) {
   box.classList.remove('flash'); void box.offsetWidth;
   if (st === 'ok') {
     box.className = 'res ok flash';
-    box.innerHTML = `${pfImg(kode) || '<div class="ic">✓</div>'}<div class="big">Berhasil — selamat datang!</div><div class="nm">${esc(p.nama)}</div><div class="sm">${esc(p.kategori || '')} · ${esc(kode)} · ${esc(waktu)}</div>`;
+    box.innerHTML = `${pfImg(kode) || '<div class="ic">✓</div>'}${isPanitia(p) ? '<div class="apv">✓ ABSEN DISETUJUI</div>' : ''}<div class="big">${isPanitia(p) ? 'Absen kamu tercatat — selamat bertugas!' : 'Berhasil — selamat datang!'}</div><div class="nm">${esc(p.nama)}</div><div class="sm">${isPanitia(p) ? 'Panitia · ' + esc(kode) + ' · masuk ' + esc(waktu) : esc(p.kategori || '') + ' · ' + esc(kode) + ' · ' + esc(waktu)}</div>`;
     beep(1200, 90);
   } else if (st === 'dup') {
     box.className = 'res dup flash';
-    box.innerHTML = `${pfImg(kode) || '<div class="ic">⚠</div>'}<div class="big">Tiket sudah dipakai</div><div class="nm">${esc(p.nama)}</div><div class="sm">Check-in pertama: ${esc(waktu || '-')}</div>`;
+    box.innerHTML = `${pfImg(kode) || '<div class="ic">⚠</div>'}<div class="big">${isPanitia(p) ? 'Panitia ini sudah absen' : 'Tiket sudah dipakai'}</div><div class="nm">${esc(p.nama)}</div><div class="sm">${isPanitia(p) ? 'Absen pertama' : 'Check-in pertama'}: ${esc(waktu || '-')}</div>`;
     beep(440, 300);
   } else if (st === 'tolak') {
     box.className = 'res bad flash';
