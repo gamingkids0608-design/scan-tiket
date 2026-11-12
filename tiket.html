@@ -379,10 +379,11 @@ function pantau(t){ let base=null, done=false, inflight=0, fastUntil=Date.now()+
   const wake=()=>{ fastUntil=Date.now()+5*60000; };
   document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') wake(); });
   ['touchstart','click','scroll'].forEach(e=>window.addEventListener(e,wake,{passive:true}));
-  const handle=r=>{ if(done||!r||r.status!=='ok') return; if(!base){ base=r; return; }
-    if(!base.masuk&&r.masuk){ done=true; notif('ok',t,r.waktu); return; }
-    if(r.tolak>base.tolak+20000){ base.tolak=r.tolak; notif('bad',t); }
-    if(base.masuk&&!r.masuk) base.masuk=false; };
+  const handle=r=>{ if(!r||r.status!=='ok') return; if(!base){ base=r; return; }
+    const baruTolak=r.tolak>base.tolak+20000; if(r.tolak>base.tolak) base.tolak=r.tolak;
+    if(!base.masuk&&r.masuk) notif('ok',t,r.waktu);
+    else if(baruTolak) notif('bad',t);
+    base.masuk=r.masuk; };
   const cek=async()=>{ inflight++; try{ handle(await api({action:'cek',kode:t.kode})); }catch(e){} inflight--; };
   const loop=()=>{ if(done) return; const vis=document.visibilityState==='visible', fast=vis&&Date.now()<fastUntil;
     if(vis&&inflight<(fast?2:1)) cek(); setTimeout(loop, fast?900:(vis?5000:3000)); };
