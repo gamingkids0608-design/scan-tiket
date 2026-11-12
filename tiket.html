@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tiket</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Roboto,sans-serif;background:#f6f5f2;color:#1d1d1b}
+  .wrap{max-width:520px;margin:0 auto;padding:16px}
+  h1{font-size:19px;margin:6px 0 12px}
+  .card{background:#fff;border:1px solid #e4e2dc;border-radius:14px;padding:16px;margin-bottom:12px}
+  canvas{width:100%;max-width:360px;display:block;margin:0 auto;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+  .btn{display:block;width:100%;padding:13px;border:0;border-radius:12px;background:#1f5f4a;color:#fff;font-size:16px;font-weight:600;margin-top:12px;cursor:pointer;text-align:center;text-decoration:none}
+  .btn.sm{display:inline-block;width:auto;padding:7px 12px;font-size:13px;margin:0}
+  .btn:disabled{opacity:.5}
+  input{width:100%;padding:12px;border:1px solid #e4e2dc;border-radius:10px;font-size:16px}
+  form{display:flex;gap:6px}
+  form button{padding:0 16px;border:0;border-radius:10px;background:#1d1d1b;color:#fff;font-weight:600}
+  .row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eee}
+  .row:last-child{border-bottom:0}
+  .row .who{flex:1;min-width:0}
+  .row .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .kd{font-size:12px;color:#6b6a65;font-family:ui-monospace,Menlo,monospace}
+  .msg{color:#6b6a65;font-size:14px;text-align:center;padding:10px}
+  .err{color:#b3261e}
+  .hide{display:none}
+</style>
+</head>
+<body>
+<div class="wrap" id="root"><div class="msg">Memuat…</div></div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbw_vgVzfZj8hOciHzvvF0llkaY8UqUPGWp1Ga99vZOwS0P2fT_uV7MOKd4NSMMeUkHH/exec';
+const root = document.getElementById('root');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function jsonp(params) {
+  return new Promise((res, rej) => {
+    const cb = 'cb' + Math.random().toString(36).slice(2);
+    const s = document.createElement('script');
+    const t = setTimeout(() => { cleanup(); rej(new Error('Waktu habis')); }, 20000);
+    function cleanup() { clearTimeout(t); delete window[cb]; s.remove(); }
+    window[cb] = d => { cleanup(); res(d); };
+    s.onerror = () => { cleanup(); rej(new Error('Tidak bisa terhubung')); };
+    s.src = API + '?' + new URLSearchParams(Object.assign({}, params, { callback: cb }));
+    document.head.appendChild(s);
+  });
+}
+function api(params) {
+  return fetch(API + '?' + new URLSearchParams(params))
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .catch(() => jsonp(params));
+}
+
+// ---------- gambar tiket ----------
+function wrapText(g, text, maxW) {
+  const words = String(text || '').split(/\s+/); const lines = []; let line = '';
+  for (const w of words) {
+    const t = line ? line + ' ' + w : w;
+    if (g.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t;
+  }
+  if (line) lines.push(line);
+  return lines.slice(0, 2);
+}
+function drawTicket(t, acara) {
+  const W = 900, H = 1500, R = 36, c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  const HEAD = 330, CUT = H - 250;
+
+  // kartu dengan sudut bulat + lekukan sobekan di kiri-kanan
+  g.fillStyle = '#eef1ee'; g.fillRect(0, 0, W, H);
+  g.save();
+  g.beginPath();
+  g.moveTo(R, 0); g.lineTo(W - R, 0); g.arcTo(W, 0, W, R, R);
+  g.lineTo(W, CUT - 34); g.arc(W, CUT, 34, -Math.PI / 2, Math.PI / 2, true);
+  g.lineTo(W, H - R); g.arcTo(W, H, W - R, H, R);
+  g.lineTo(R, H); g.arcTo(0, H, 0, H - R, R);
+  g.lineTo(0, CUT + 34); g.arc(0, CUT, 34, Math.PI / 2, -Math.PI / 2, true);
+  g.lineTo(0, R); g.arcTo(0, 0, R, 0, R); g.closePath();
+  g.clip();
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
+
+  // header gradasi + ornamen
+  const grd = g.createLinearGradient(0, 0, W, HEAD);
+  grd.addColorStop(0, '#173f33'); grd.addColorStop(1, '#2b7a5f');
+  g.fillStyle = grd; g.fillRect(0, 0, W, HEAD);
+  g.fillStyle = 'rgba(255,255,255,.07)';
+  g.beginPath(); g.arc(W - 90, 40, 170, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.arc(W - 20, HEAD - 10, 110, 0, Math.PI * 2); g.fill();
+
+  g.textAlign = 'left'; g.fillStyle = '#bfe6d4';
+  g.font = '700 24px system-ui, sans-serif';
+  g.fillText('E-TICKET', 60, 78);
+  g.fillStyle = '#ffffff'; g.font = '800 54px system-ui, sans-serif';
+  const judul = wrapText(g, acara.nama || 'Tiket Acara', W - 140);
+  judul.forEach((l, i) => g.fillText(l, 60, 150 + i * 62));
+  g.font = '28px system-ui, sans-serif'; g.fillStyle = 'rgba(255,255,255,.85)';
+  const info = [acara.tanggal, acara.lokasi].filter(Boolean);
+  info.forEach((l, i) => g.fillText(l, 60, 150 + judul.length * 62 + 4 + i * 38));
+
+  // QR dalam kotak bulat
+  const q = qrcode(0, 'M'); q.addData(t.kode); q.make();
+  const n = q.getModuleCount(), cell = Math.floor(520 / n), qs = cell * n, pad = 34;
+  const box = qs + pad * 2, bx = (W - box) / 2, by = HEAD + 60;
+  g.fillStyle = '#ffffff'; g.strokeStyle = '#e3e7e4'; g.lineWidth = 3;
+  roundRect(g, bx, by, box, box, 28); g.fill(); g.stroke();
+  g.fillStyle = '#111';
+  for (let r = 0; r < n; r++) for (let k = 0; k < n; k++)
+    if (q.isDark(r, k)) g.fillRect(bx + pad + k * cell, by + pad + r * cell, cell, cell);
+
+  // nama, kategori, kode
+  g.textAlign = 'center';
+  let y = by + box + 80;
+  g.fillStyle = '#8a8f8c'; g.font = '600 22px system-ui, sans-serif';
+  g.fillText('NAMA PESERTA', W / 2, y - 6); y += 52;
+  g.fillStyle = '#1d1d1b'; g.font = '800 52px system-ui, sans-serif';
+  wrapText(g, t.nama, W - 120).forEach(l => { g.fillText(l, W / 2, y); y += 60; });
+  if (t.kategori) {
+    g.font = '700 28px system-ui, sans-serif';
+    const tw = g.measureText(t.kategori.toUpperCase()).width + 56;
+    g.fillStyle = '#e3f4ea'; roundRect(g, (W - tw) / 2, y - 18, tw, 52, 26); g.fill();
+    g.fillStyle = '#1f7a4d'; g.fillText(t.kategori.toUpperCase(), W / 2, y + 18);
+  }
+
+  // garis sobekan + bagian bawah
+  g.setLineDash([16, 14]); g.strokeStyle = '#cfd5d1'; g.lineWidth = 4;
+  g.beginPath(); g.moveTo(60, CUT); g.lineTo(W - 60, CUT); g.stroke(); g.setLineDash([]);
+  g.fillStyle = '#8a8f8c'; g.font = '600 22px system-ui, sans-serif';
+  g.fillText('KODE TIKET', W / 2, CUT + 80);
+  g.fillStyle = '#1d1d1b'; g.font = '800 54px ui-monospace, Menlo, Consolas, monospace';
+  g.fillText(t.kode, W / 2, CUT + 145);
+  g.fillStyle = '#8a8f8c'; g.font = '24px system-ui, sans-serif';
+  g.fillText('Tunjukkan QR ini saat registrasi ulang', W / 2, CUT + 200);
+  g.restore();
+  return c;
+}
+function roundRect(g, x, y, w, h, r) {
+  g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+}
+const fileName = t => ('tiket-' + t.nama + '-' + t.kode).replace(/[^a-z0-9\-]+/gi, '-').replace(/-+/g, '-') + '.png';
+function toBlob(c) { return new Promise(r => c.toBlob(r, 'image/png')); }
+async function download(c, name) {
+  const blob = await toBlob(c);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+// ---------- halaman satu tiket (untuk peserta) ----------
+async function showOne(kode) {
+  try {
+    const r = await api({ action: 'tiket', kode });
+    if (!r || r.status !== 'ok') { root.innerHTML = `<div class="card msg err">Tiket <b>${esc(kode)}</b> tidak ditemukan.</div>`; return; }
+    root.innerHTML = `<div class="card"><div id="cv"></div><button class="btn" id="dl">⬇ Download tiket</button>
+      <div class="msg">Simpan gambar ini dan tunjukkan saat datang.</div></div>`;
+    const c = drawTicket(r.tiket, r.acara || {});
+    document.getElementById('cv').appendChild(c);
+    document.getElementById('dl').onclick = () => download(c, fileName(r.tiket));
+  } catch (e) { root.innerHTML = `<div class="card msg err">Gagal memuat tiket. Cek internet lalu muat ulang.</div>`; }
+}
+
+// ---------- halaman panitia (semua tiket) ----------
+let PIN = ''; try { PIN = localStorage.getItem('tiketPin') || ''; } catch (e) {}
+function showPin(msg) {
+  root.innerHTML = `<h1>🎫 Download tiket peserta</h1><div class="card"><div style="margin-bottom:8px">Masukkan PIN panitia</div>
+    <form id="pf"><input id="pi" type="password" inputmode="numeric" placeholder="PIN"><button>Masuk</button></form>
+    <div class="msg err">${esc(msg || '')}</div></div>`;
+  document.getElementById('pf').onsubmit = e => { e.preventDefault(); PIN = document.getElementById('pi').value.trim(); loadAll(); };
+}
+async function loadAll() {
+  root.innerHTML = '<div class="msg">Memuat daftar peserta…</div>';
+  let r;
+  try { r = await api({ action: 'list', pin: PIN }); } catch (e) { return showPin('Tidak bisa terhubung.'); }
+  if (!r) return showPin(PIN ? 'PIN salah.' : '');
+  try { localStorage.setItem('tiketPin', PIN); } catch (e) {}
+  const list = r.peserta || [], acara = r.acara || {};
+  root.innerHTML = `<h1>🎫 Tiket peserta (${list.length})</h1>
+    <div class="card"><button class="btn" id="zip" style="margin-top:0">⬇ Download semua tiket (ZIP)</button><div class="msg" id="zmsg"></div></div>
+    <div class="card" id="lst">${list.map((t, i) => `<div class="row"><div class="who"><div class="nm">${esc(t.nama)}</div>
+      <div class="kd">${esc(t.kode)}${t.kategori ? ' · ' + esc(t.kategori) : ''}</div></div>
+      <button class="btn sm" data-i="${i}">⬇ PNG</button></div>`).join('') || '<div class="msg">Belum ada peserta.</div>'}</div>`;
+  document.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const t = list[+b.dataset.i]; download(drawTicket(t, acara), fileName(t)); });
+  document.getElementById('zip').onclick = async () => {
+    const btn = document.getElementById('zip'), m = document.getElementById('zmsg');
+    btn.disabled = true;
+    const zip = new JSZip();
+    for (let i = 0; i < list.length; i++) {
+      m.textContent = `Membuat tiket ${i + 1}/${list.length}…`;
+      zip.file(fileName(list[i]), await toBlob(drawTicket(list[i], acara)));
+      await new Promise(r => setTimeout(r, 0));
+    }
+    m.textContent = 'Mengemas ZIP…';
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'semua-tiket.zip';
+    document.body.appendChild(a); a.click(); a.remove();
+    m.textContent = `Selesai: ${list.length} tiket.`; btn.disabled = false;
+  };
+}
+
+const kode = new URLSearchParams(location.search).get('kode');
+if (kode) showOne(kode.trim().toUpperCase());
+else if (PIN) loadAll(); else showPin();
+</script>
+</body>
+</html>
