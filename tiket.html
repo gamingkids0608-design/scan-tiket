@@ -375,16 +375,18 @@ function notif(kind,t,waktu){ const k=String(t.kategori||''), pan=/panitia/i.tes
   try{ const a=new (window.AudioContext||window.webkitAudioContext)(), o=a.createOscillator(), g=a.createGain(); o.frequency.value=kind==='bad'?260:1046; g.gain.value=.05; o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime+(kind==='bad'?.4:.15)); }catch(e){}
 }
 document.getElementById('ntx').onclick=()=>document.getElementById('nt').classList.remove('show');
-function pantau(t){ let base=null, done=false;
-  const tick=async()=>{ if(done) return;
-    if(document.visibilityState!=='visible'){ setTimeout(tick,2500); return; }
-    try{ const r=await api({action:'cek',kode:t.kode});
-      if(r&&r.status==='ok'){ if(!base) base=r; else {
-        if(!base.masuk&&r.masuk){ notif('ok',t,r.waktu); done=true; return; }
-        if(r.tolak>base.tolak){ base.tolak=r.tolak; notif('bad',t); }
-        if(base.masuk&&!r.masuk) base.masuk=false; } } }catch(e){}
-    setTimeout(tick,4000); };
-  tick();
+function pantau(t){ let base=null, done=false, inflight=0, fastUntil=Date.now()+5*60000;
+  const wake=()=>{ fastUntil=Date.now()+5*60000; };
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') wake(); });
+  ['touchstart','click','scroll'].forEach(e=>window.addEventListener(e,wake,{passive:true}));
+  const handle=r=>{ if(done||!r||r.status!=='ok') return; if(!base){ base=r; return; }
+    if(!base.masuk&&r.masuk){ done=true; notif('ok',t,r.waktu); return; }
+    if(r.tolak>base.tolak+20000){ base.tolak=r.tolak; notif('bad',t); }
+    if(base.masuk&&!r.masuk) base.masuk=false; };
+  const cek=async()=>{ inflight++; try{ handle(await api({action:'cek',kode:t.kode})); }catch(e){} inflight--; };
+  const loop=()=>{ if(done) return; const vis=document.visibilityState==='visible', fast=vis&&Date.now()<fastUntil;
+    if(vis&&inflight<(fast?2:1)) cek(); setTimeout(loop, fast?900:(vis?5000:3000)); };
+  loop();
 }
 function waStat(){const el=document.getElementById('wastat'); if(!el) return; const bisa=LIST.filter(t=>waLink(t.kontak,t,ACARA)).length, sudah=LIST.filter(t=>t.wa).length; el.className='stat'+(sudah>=bisa&&bisa?' g':''); el.innerHTML=`<b>${sudah}<small style="font-size:15px;color:var(--mute)">/${bisa}</small></b><span>Sudah di-WA</span>`;}
 async function setWA(t,on){const old=t.wa; t.wa=on?new Date().toTimeString().slice(0,5)+', '+String(new Date().getDate()).padStart(2,'0')+'/'+String(new Date().getMonth()+1).padStart(2,'0'):''; renderList();
