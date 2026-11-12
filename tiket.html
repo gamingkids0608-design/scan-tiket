@@ -258,13 +258,13 @@ async function loadAll() {
     <div class="stat o"><b>${LIST.length-hadir}</b><span>Belum hadir</span></div><div class="stat"><b>${kats.length}</b><span>Kategori</span></div></div>
     <div class="card" style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <div style="flex:1;min-width:200px"><b>Download semua e-ticket</b><div class="sub" style="margin:2px 0 0" id="zmsg">${LIST.length} file PNG dalam satu ZIP</div></div>
-      <button class="btn gold" id="zip">⬇  Download ZIP</button></div>
+      <button class="btn gold" id="zip">⬇  Download ZIP</button></div>    <div class="card" style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">      <div style="flex:1;min-width:200px"><b>Reset kehadiran untuk hari berikutnya</b><div class="sub" style="margin:2px 0 0">Status semua peserta kembali "Belum". Data kehadiran sebelumnya otomatis disimpan di tab "Riwayat" spreadsheet.</div></div>      <button class="btn ghost" id="reset">↺  Reset kehadiran</button></div>
     <div class="card"><div class="tools"><input id="q" placeholder="Cari nama atau kode…"><select id="fk"><option value="">Semua kategori</option>${kats.map(k=>`<option>${esc(k)}</option>`).join('')}</select>
       <select id="fs"><option value="">Semua status</option><option value="in">Sudah hadir</option><option value="out">Belum hadir</option></select></div>
       <div class="list" id="lst"></div></div>`;
   ['q','fk','fs'].forEach(id=>document.getElementById(id).oninput=renderList);
   renderList();
-  document.getElementById('zip').onclick = async () => {
+  document.getElementById('reset').onclick = async () => { if (!confirm('Reset semua status kehadiran ke "Belum"? Data kehadiran saat ini akan disimpan dulu di tab Riwayat.')) return; const b = document.getElementById('reset'); b.disabled = true; b.textContent = 'Mereset…'; try { const r = await api({ action: 'reset', pin: PIN }); if (!r || !r.ok) throw new Error('gagal'); toast('Selesai — ' + r.arsip + ' data kehadiran disimpan ke Riwayat'); loadAll(); } catch (e) { toast('Gagal reset, coba lagi'); b.disabled = false; b.textContent = '↺  Reset kehadiran'; } };  document.getElementById('zip').onclick = async () => {
     const btn = document.getElementById('zip'), m = document.getElementById('zmsg'); btn.disabled = true;
     const A = await assets(); const zip = new JSZip();
     for (let i = 0; i < LIST.length; i++) { m.textContent = `Membuat tiket ${i + 1}/${LIST.length}…`;
