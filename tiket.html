@@ -388,9 +388,9 @@ function bukaForm(t){ FORM_T=t;
   $f('fT').textContent=t?'Edit data peserta':'Tambah peserta';
   $f('fS').textContent=t?(t.kode+' · perubahan langsung tersimpan di spreadsheet'):'Data langsung masuk ke spreadsheet dan kode tiket dibuat otomatis.';
   $f('fNama').value=t?(t.nama||''):''; $f('fTelp').value=t?(t.kontak||''):'';
-  const kats=[...new Set(['Umum','VIP','Panitia',...LIST.map(p=>String(p.kategori||'').trim()).filter(Boolean)])];
-  $f('fKat').innerHTML=kats.map(k=>'<option>'+esc(k)+'</option>').join('')+'<option value="__lain">＋ Kategori lain…</option>';
-  $f('fKat').value=(t&&t.kategori&&kats.includes(String(t.kategori).trim()))?String(t.kategori).trim():'Umum';
+  const kats=['Peserta','Panitia','Dosen'];
+  $f('fKat').innerHTML=kats.map(k=>'<option>'+esc(k)+'</option>').join('');
+  $f('fKat').value=(t&&t.kategori&&kats.includes(String(t.kategori).trim()))?String(t.kategori).trim():'Peserta';
   $f('fKatL').style.display='none'; $f('fKatL').value=''; $f('fMsg').textContent='';
   $f('fSave').disabled=false; $f('fSave').textContent=t?'Simpan perubahan':'Tambah & buat tiket';
   $f('formM').classList.add('show'); setTimeout(()=>$f('fNama').focus(),60);
@@ -414,12 +414,12 @@ $f('fSave').onclick=async()=>{
   tutupForm(); toast(FORM_T?'Data '+nama+' diperbarui':'✓ '+nama+' ditambahkan · '+r.kode);
   const q=r.kode||(FORM_T&&FORM_T.kode)||''; await loadAll(); if(q&&$f('q')){ $f('q').value=q; renderList(); }
 };
-function notif(kind,t,waktu){ const k=String(t.kategori||''), pan=/panitia/i.test(k), vip=/vip/i.test(k), nm=esc((ACARA&&ACARA.nama)||'ÔTELION IV');
+function notif(kind,t,waktu){ const k=String(t.kategori||''), pan=/panitia/i.test(k), vip=/dosen|vip/i.test(k), nm=esc((ACARA&&ACARA.nama)||'ÔTELION IV');
   const m=document.getElementById('nt'); m.className='nt show'+(kind==='bad'?' bad':(vip&&!pan)?' vip':'');
   const set=(id,h)=>document.getElementById(id).innerHTML=h;
   if(kind==='bad'){ set('ntic','✕'); set('ntt','ABSEN DITOLAK'); set('ntm','Verifikasi tidak sesuai'); set('ntp','Petugas menyatakan wajah tidak cocok dengan foto panitia, jadi absen <b>belum dicatat</b>. Silakan temui koordinator registrasi.'); }
   else if(pan){ set('ntic','✓'); set('ntt','ABSEN DISETUJUI'); set('ntm','Selamat bertugas!'); set('ntp','Kehadiran kamu tercatat pukul <b>'+esc(waktu||'-')+'</b>. Terima kasih sudah bertugas di '+nm+'.'); }
-  else { set('ntic','✓'); set('ntt',vip?'TAMU VIP · CHECK-IN BERHASIL':'CHECK-IN BERHASIL'); set('ntm','Selamat datang!'); set('ntp','Registrasi ulang tercatat pukul <b>'+esc(waktu||'-')+'</b>. Selamat menikmati '+nm+' — Heritage Reimagined.'); }
+  else { set('ntic','✓'); set('ntt',vip?'DOSEN · CHECK-IN BERHASIL':'CHECK-IN BERHASIL'); set('ntm',vip?'Selamat datang, Bapak/Ibu!':'Selamat datang!'); set('ntp','Registrasi ulang tercatat pukul <b>'+esc(waktu||'-')+'</b>. Selamat menikmati '+nm+' — Heritage Reimagined.'); }
   set('ntn',esc(t.nama||''));
   try{ navigator.vibrate&&navigator.vibrate(kind==='bad'?[220,100,220]:[80,60,80]); }catch(e){}
   try{ const a=new (window.AudioContext||window.webkitAudioContext)(), o=a.createOscillator(), g=a.createGain(); o.frequency.value=kind==='bad'?260:1046; g.gain.value=.05; o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime+(kind==='bad'?.4:.15)); }catch(e){}
