@@ -1,55 +1,108 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Scan Tiket</title>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scan Tiket · ÔTELION IV</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
+  :root{--green:#0f5f37;--green2:#1b7a4b;--orange:#c8641e;--gold:#d9a441;--maroon:#8b2a1a;--cream:#fbf6ec;--ink:#1f2420;--mute:#6f736d;--line:#ebe4d6}
   *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,Roboto,sans-serif;background:#f6f5f2;color:#1d1d1b}
-  .wrap{max-width:480px;margin:0 auto;padding:14px}
-  h1{font-size:19px;margin:4px 0 10px}
-  .stats{display:flex;gap:8px;margin-bottom:10px}
-  .stat{flex:1;background:#fff;border:1px solid #e4e2dc;border-radius:12px;padding:10px;text-align:center}
-  .stat b{display:block;font-size:22px}
-  .stat span{font-size:12px;color:#6b6a65}
-  #reader{width:100%;border-radius:14px;overflow:hidden;background:#000;min-height:60px}
-  #reader video{border-radius:14px}
-  .btn{width:100%;padding:13px;border:0;border-radius:12px;background:#1f5f4a;color:#fff;font-size:16px;font-weight:600;margin-top:10px}
-  .btn.ghost{background:transparent;color:#1f5f4a;border:1px solid #1f5f4a}
-  .res{border-radius:14px;padding:16px;text-align:center;margin-top:10px;min-height:86px}
-  .res .big{font-size:21px;font-weight:700}
-  .res .nm{font-size:19px;margin-top:4px;color:#1d1d1b}
+  body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--cream);color:var(--ink)}
+  .top{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  .top .in{max-width:980px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:14px}
+  .top img{height:34px}.top .sep{width:1px;height:28px;background:var(--line)}
+  .top nav{margin-left:auto;display:flex;gap:6px}
+  .top nav a{padding:8px 14px;border-radius:999px;font-weight:600;font-size:14px;color:var(--mute);text-decoration:none}
+  .top nav a.on{background:var(--green);color:#fff}
+  .stripe{height:4px;background:linear-gradient(90deg,var(--maroon) 0 33%,var(--gold) 33% 66%,var(--green) 66%)}
+  .wrap{max-width:560px;margin:0 auto;padding:18px 16px 60px}
+  h1{font-family:'Cormorant Garamond',serif;font-size:30px;margin:2px 0 2px;color:var(--green)}
+  .sub{color:var(--mute);font-size:14px;margin-bottom:14px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 18px;border:0;border-radius:14px;background:var(--green);color:#fff;font:700 16px Inter,sans-serif;cursor:pointer;width:100%}
+  .btn.ghost{background:#fff;color:var(--green);border:1px solid #cfe0d5}
+  input{padding:12px 13px;border:1px solid var(--line);border-radius:12px;font:15px Inter,sans-serif;background:#fff;color:var(--ink)}
+  .hide{display:none!important}
+  /* pin */
+  .pin{text-align:center;margin-top:30px}
+  .pin .logos{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:10px}
+  .pin .logos img:first-child{height:90px}.pin .logos img:last-child{height:40px}
+  .pin form,.manual{display:flex;gap:8px;margin-top:12px}
+  .pin input,.manual input{flex:1;min-width:0}
+  .pin button,.manual button{width:auto;padding:0 18px}
+  .err{color:#b3261e;font-size:14px;margin-top:8px}
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .stat{text-align:center}
+  .stat b{display:block;font-size:28px;font-weight:800}
+  .stat span{font-size:11px;color:var(--mute);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+  .stat.g b{color:var(--green)}.stat.o b{color:var(--orange)}
+  .bar{height:10px;border-radius:99px;background:#f1ece2;overflow:hidden;margin-top:12px}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--green2));transition:width .4s}
+  .pct{font-size:12px;color:var(--mute);margin-top:6px;text-align:right}
+  /* scanner */
+  .cam{position:relative;border-radius:16px;overflow:hidden;background:#14201a;min-height:220px;display:grid;place-items:center}
+  .cam .ph{color:#cfe0d5;font-size:14px;text-align:center;padding:30px}
+  .cam .ph .ico{font-size:40px;display:block;margin-bottom:6px}
+  #reader{width:100%}
+  #reader video{display:block;width:100%!important;border-radius:16px}
+  .res{border-radius:18px;padding:18px;text-align:center;margin-top:12px;border:2px solid transparent;transition:.2s}
+  .res .ic{font-size:34px;line-height:1}
+  .res .big{font-size:20px;font-weight:800;margin-top:6px}
+  .res .nm{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:700;margin-top:4px;color:var(--ink)}
   .res .sm{font-size:13px;margin-top:4px}
-  .ok{background:#e3f4ea;color:#1f7a4d}.dup{background:#fdf1dc;color:#9a6200}.bad{background:#fbe5e3;color:#b3261e}.idle{background:#fff;color:#6b6a65;border:1px dashed #d8d6cf}
-  form{display:flex;gap:6px;margin-top:10px}
-  input{flex:1;padding:12px;border:1px solid #e4e2dc;border-radius:10px;font-size:16px}
-  form button{padding:0 16px;border:0;border-radius:10px;background:#1d1d1b;color:#fff;font-weight:600}
-  .hide{display:none}
-  .pin{background:#fff;border:1px solid #e4e2dc;border-radius:14px;padding:18px;margin-top:30px}
+  .res.idle{background:#fff;color:var(--mute);border:2px dashed var(--line)}
+  .res.ok{background:#e3f4ea;color:var(--green);border-color:#9fd0b2}
+  .res.dup{background:#fdf1dc;color:#9a6200;border-color:#f0cf8c}
+  .res.bad{background:#fbe5e3;color:#b3261e;border-color:#f0b4ae}
+  .flash{animation:fl .5s}
+  @keyframes fl{0%{transform:scale(.97)}60%{transform:scale(1.02)}100%{transform:scale(1)}}
+  /* history */
+  .hist h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);margin:0 0 6px}
+  .hrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f1ece2;font-size:14px}
+  .hrow:last-child{border-bottom:0}
+  .dot{width:10px;height:10px;border-radius:50%;flex:none}
+  .hrow .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+  .hrow .t{color:var(--mute);font:700 12px 'JetBrains Mono',monospace}
+  @media (max-width:640px){.top img{height:26px}.top nav a{padding:7px 10px}}
 </style>
 </head>
 <body>
+<div class="top"><div class="in">
+  <img src="assets/logo-pradita.png" alt="Pradita University"><div class="sep"></div><img src="assets/logo-otelion-mark.png" alt="ÔTELION IV">
+  <nav id="nav" class="hide"><a href="./" class="on">Scan</a><a href="tiket.html">Tiket</a></nav>
+</div><div class="stripe"></div></div>
+
 <div class="wrap">
-  <div id="pinBox" class="pin hide">
-    <h1>Masukkan PIN panitia</h1>
-    <form id="pinForm"><input id="pinIn" type="password" inputmode="numeric" placeholder="PIN"><button>Masuk</button></form>
-    <div id="pinMsg" class="sm" style="color:#b3261e;margin-top:8px"></div>
+  <div id="pinBox" class="card pin hide">
+    <div class="logos"><img src="assets/logo-otelion-mark.png" alt=""><img src="assets/logo-pradita.png" alt=""></div>
+    <h1 style="font-size:26px">Registrasi Ulang</h1>
+    <div class="sub" style="margin:0">Masukkan PIN panitia untuk mulai scan tiket.</div>
+    <form id="pinForm"><input id="pinIn" type="password" inputmode="numeric" placeholder="PIN panitia" autocomplete="off"><button class="btn">Masuk</button></form>
+    <div id="pinMsg" class="err"></div>
   </div>
 
   <div id="app" class="hide">
-    <h1>🎫 Scan Tiket</h1>
-    <div class="stats">
-      <div class="stat"><b id="sTotal">–</b><span>Terdaftar</span></div>
-      <div class="stat"><b id="sIn">–</b><span>Sudah masuk</span></div>
-      <div class="stat"><b id="sOut">–</b><span>Belum</span></div>
+    <h1>Scan Tiket</h1>
+    <div class="sub">ÔTELION IV · Hotelier Competition 2026</div>
+    <div class="card">
+      <div class="stats">
+        <div class="stat"><b id="sTotal">–</b><span>Terdaftar</span></div>
+        <div class="stat g"><b id="sIn">–</b><span>Hadir</span></div>
+        <div class="stat o"><b id="sOut">–</b><span>Belum</span></div>
+      </div>
+      <div class="bar"><i id="bar"></i></div><div class="pct" id="pct"></div>
     </div>
-    <div id="reader"></div>
-    <button class="btn" id="startBtn">▶ Mulai scan</button>
-    <button class="btn ghost hide" id="stopBtn">■ Stop kamera</button>
-    <div id="res" class="res idle"><div class="big">Siap scan</div><div class="sm">Arahkan kamera ke QR tiket</div></div>
-    <form id="manual"><input id="codeIn" placeholder="atau ketik kode: TKT-XXXXXX" autocapitalize="characters" autocomplete="off"><button>Cek</button></form>
+    <div class="card">
+      <div class="cam"><div id="reader"></div><div class="ph" id="ph"><span class="ico">📷</span>Kamera belum aktif</div></div>
+      <button class="btn" id="startBtn" style="margin-top:12px">▶  Mulai scan</button>
+      <button class="btn ghost hide" id="stopBtn" style="margin-top:12px">■  Stop kamera</button>
+      <div id="res" class="res idle"><div class="ic">◎</div><div class="big">Siap scan</div><div class="sm">Arahkan kamera ke QR tiket peserta</div></div>
+      <form class="manual" id="manual"><input id="codeIn" placeholder="atau ketik kode: TKT-XXXXXX" autocapitalize="characters" autocomplete="off"><button class="btn">Cek</button></form>
+    </div>
+    <div class="card hist"><h3>Riwayat scan perangkat ini</h3><div id="hist"><div class="sub" style="margin:0">Belum ada scan.</div></div></div>
   </div>
 </div>
 
@@ -68,16 +121,15 @@ function jsonp(params) {
   });
 }
 function api(params) {
-  const q = new URLSearchParams(params).toString();
-  return fetch(API + '?' + q)
+  return fetch(API + '?' + new URLSearchParams(params))
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .catch(() => jsonp(params)); // jalur cadangan
+    .catch(() => jsonp(params));
 }
 let PIN = '';
 try { PIN = localStorage.getItem('tiketPin') || ''; } catch (e) {}
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let scanner = null, busy = false, last = '', lastAt = 0, actx;
+let scanner = null, busy = false, last = '', lastAt = 0, actx, hist = [];
 
 function beep(f, ms) {
   try {
@@ -88,9 +140,8 @@ function beep(f, ms) {
   } catch (e) {}
   try { navigator.vibrate && navigator.vibrate(f > 600 ? 80 : [80, 60, 80]); } catch (e) {}
 }
-
-function showPin(msg) { $('app').classList.add('hide'); $('pinBox').classList.remove('hide'); $('pinMsg').textContent = msg || ''; }
-function showApp() { $('pinBox').classList.add('hide'); $('app').classList.remove('hide'); refreshStats(); }
+function showPin(msg) { $('app').classList.add('hide'); $('nav').classList.add('hide'); $('pinBox').classList.remove('hide'); $('pinMsg').textContent = msg || ''; }
+function showApp() { $('pinBox').classList.add('hide'); $('app').classList.remove('hide'); $('nav').classList.remove('hide'); refreshStats(); }
 
 $('pinForm').onsubmit = e => {
   e.preventDefault();
@@ -105,58 +156,64 @@ function refreshStats() {
   api({ action: 'stats', pin: PIN }).then(s => {
     if (!s) return showPin('PIN berubah, masukkan lagi.');
     $('sTotal').textContent = s.total; $('sIn').textContent = s.masuk; $('sOut').textContent = s.total - s.masuk;
+    const p = s.total ? Math.round(s.masuk / s.total * 100) : 0;
+    $('bar').style.width = p + '%'; $('pct').textContent = p + '% peserta sudah hadir';
   }).catch(() => {});
 }
-
+function addHist(r) {
+  const col = r.status === 'ok' ? '#1b7a4b' : r.status === 'dup' ? '#d9a441' : '#b3261e';
+  const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  hist.unshift({ col, nama: r.nama || 'Tidak terdaftar', kode: r.kode || '', now });
+  hist = hist.slice(0, 12);
+  $('hist').innerHTML = hist.map(h => `<div class="hrow"><span class="dot" style="background:${h.col}"></span><span class="n">${esc(h.nama)}</span><span class="t">${esc(h.kode)}</span><span class="t">${h.now}</span></div>`).join('');
+}
 function show(r) {
   const box = $('res');
   if (r.status === 'pin') return showPin('PIN salah atau sudah diganti.');
   if (r.status === 'ok') {
-    box.className = 'res ok';
-    box.innerHTML = `<div class="big">✓ Berhasil masuk</div><div class="nm">${esc(r.nama)}</div><div class="sm">${esc(r.kategori)} · ${esc(r.kode)} · ${esc(r.waktu)}</div>`;
+    box.className = 'res ok flash';
+    box.innerHTML = `<div class="ic">✓</div><div class="big">Berhasil — selamat datang!</div><div class="nm">${esc(r.nama)}</div><div class="sm">${esc(r.kategori)} · ${esc(r.kode)} · ${esc(r.waktu)}</div>`;
     beep(880);
   } else if (r.status === 'dup') {
-    box.className = 'res dup';
-    box.innerHTML = `<div class="big">⚠ Sudah masuk sebelumnya</div><div class="nm">${esc(r.nama)}</div><div class="sm">Check-in pertama: ${esc(r.waktu)}</div>`;
+    box.className = 'res dup flash';
+    box.innerHTML = `<div class="ic">⚠</div><div class="big">Tiket sudah dipakai</div><div class="nm">${esc(r.nama)}</div><div class="sm">Check-in pertama: ${esc(r.waktu)}</div>`;
     beep(440, 300);
   } else {
-    box.className = 'res bad';
-    box.innerHTML = `<div class="big">✕ Tiket tidak terdaftar</div><div class="sm">${esc(r.kode)}</div>`;
+    box.className = 'res bad flash';
+    box.innerHTML = `<div class="ic">✕</div><div class="big">Tiket tidak terdaftar</div><div class="sm">${esc(r.kode)}</div>`;
     beep(220, 400);
   }
+  addHist(r);
   refreshStats();
 }
-
 function cek(text) {
   const now = Date.now();
   if (busy) return;
-  if (text === last && now - lastAt < 4000) return; // QR yang sama jangan diproses berulang
+  if (text === last && now - lastAt < 4000) return;
   last = text; lastAt = now; busy = true;
-  $('res').className = 'res idle'; $('res').innerHTML = '<div class="big">Memeriksa…</div>';
+  $('res').className = 'res idle'; $('res').innerHTML = '<div class="ic">…</div><div class="big">Memeriksa</div>';
   api({ action: 'checkin', kode: text, pin: PIN })
     .then(r => { busy = false; show(r); })
     .catch(err => {
       busy = false; last = '';
       $('res').className = 'res bad';
-      $('res').innerHTML = `<div class="big">Gagal terhubung</div><div class="sm">${esc(err.message)}. Coba scan lagi.</div>`;
-    })
-    
+      $('res').innerHTML = `<div class="ic">!</div><div class="big">Gagal terhubung</div><div class="sm">${esc(err.message)}. Coba scan lagi.</div>`;
+    });
 }
-
 $('startBtn').onclick = async () => {
   try {
     scanner = scanner || new Html5Qrcode('reader');
     await scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 240, height: 240 } }, cek, () => {});
-    $('startBtn').classList.add('hide'); $('stopBtn').classList.remove('hide');
-    beep(1, 1); // membuka izin suara di iPhone
+    $('ph').classList.add('hide'); $('startBtn').classList.add('hide'); $('stopBtn').classList.remove('hide');
+    beep(1, 1);
   } catch (e) {
     $('res').className = 'res bad';
-    $('res').innerHTML = `<div class="big">Kamera tidak bisa dibuka</div><div class="sm">${esc(e && e.message || e)}. Izinkan akses kamera di browser, lalu coba lagi.</div>`;
+    $('res').innerHTML = `<div class="ic">📷</div><div class="big">Kamera tidak bisa dibuka</div><div class="sm">${esc(e && e.message || e)}. Izinkan akses kamera di browser, lalu coba lagi.</div>`;
   }
 };
 $('stopBtn').onclick = async () => {
   try { await scanner.stop(); } catch (e) {}
-  $('stopBtn').classList.add('hide'); $('startBtn').classList.remove('hide');
+  $('ph').classList.remove('hide'); $('stopBtn').classList.add('hide'); $('startBtn').classList.remove('hide');
 };
 $('manual').onsubmit = e => { e.preventDefault(); const v = $('codeIn').value.trim(); if (v) { last = ''; cek(v); } $('codeIn').value = ''; };
 
