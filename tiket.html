@@ -70,7 +70,7 @@
 </head>
 <body>
 <div class="top"><div class="in">
-  <img src="assets/logo-pradita.png" alt="Pradita University"><div class="sep"></div><img src="assets/logo-otelion-mark.png" alt="ÔTELION IV">
+  <img src="assets/logo-pradita_1.png" alt="Pradita University"><div class="sep"></div><img src="assets/logo-otelion-mark_1.png" alt="ÔTELION IV">
   <nav id="nav" style="display:none"><a href="./">Scan</a><a href="tiket.html" class="on">Tiket</a></nav>
 </div><div class="stripe"></div></div>
 <div class="wrap" id="root"><div class="msg">Memuat…</div></div>
@@ -107,7 +107,7 @@ function loadImg(src){return new Promise(r=>{const i=new Image();i.onload=()=>r(
 let ASSETS;
 async function assets(){
   if(!ASSETS){
-    const [pradita, otelion] = await Promise.all([loadImg('assets/logo-pradita.png'), loadImg('assets/logo-otelion-mark.png')]);
+    const [pradita, otelion] = await Promise.all([loadImg('assets/logo-pradita_1.png'), loadImg('assets/logo-otelion-mark_1.png')]);
     try { await document.fonts.load('700 60px "Cormorant Garamond"'); await document.fonts.load('800 40px Inter'); await document.fonts.load('700 40px "JetBrains Mono"'); } catch(e){}
     ASSETS = {pradita, otelion};
   }
@@ -234,7 +234,7 @@ async function showOne(kode) {
 // ---------- admin ----------
 let PIN = ''; try { PIN = localStorage.getItem('tiketPin') || ''; } catch (e) {}
 function showPin(msg) {
-  root.innerHTML = `<div class="pin card"><div class="logos"><img src="assets/logo-otelion-mark.png" alt=""><img src="assets/logo-pradita.png" alt=""></div>
+  root.innerHTML = `<div class="pin card"><div class="logos"><img src="assets/logo-otelion-mark_1.png" alt=""><img src="assets/logo-pradita_1.png" alt=""></div>
     <h1 style="font-size:26px">Panel Tiket Panitia</h1><div class="sub" style="margin:0">Masukkan PIN untuk melihat & mengunduh tiket.</div>
     <form id="pf"><input id="pi" type="password" inputmode="numeric" placeholder="PIN panitia" autofocus><button class="btn">Masuk</button></form>
     <div class="msg err">${esc(msg || '')}</div></div>`;
