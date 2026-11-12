@@ -42,7 +42,7 @@
   .bar{height:10px;border-radius:99px;background:#f1ece2;overflow:hidden;margin-top:12px}
   .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--green2));transition:width .4s}
   .pct{font-size:12px;color:var(--mute);margin-top:6px;display:flex;justify-content:space-between;gap:8px}
-  .sync{font-weight:600}.sync.ok{color:var(--green2)}.sync.warn{color:#9a6200}
+  .kat{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin-top:10px}.kat div{background:#faf6ee;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12px;color:var(--mute)}.kat b{font-size:13px;color:var(--ink)}.kat .ok{color:var(--green2);font-weight:700}.kat .ku{color:var(--orange);font-weight:700}  .sync{font-weight:600}.sync.ok{color:var(--green2)}.sync.warn{color:#9a6200}
   .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);max-width:92%;background:#1f2420;color:#fff;padding:12px 16px;border-radius:12px;font-size:14px;opacity:0;transition:.2s;pointer-events:none;z-index:30}
   .toast.show{opacity:1}
   /* scanner */
@@ -96,7 +96,7 @@
         <div class="stat g"><b id="sIn">–</b><span>Hadir</span></div>
         <div class="stat o"><b id="sOut">–</b><span>Belum</span></div>
       </div>
-      <div class="bar"><i id="bar"></i></div><div class="pct"><span id="sync" class="sync"></span><span id="pct"></span></div>
+      <div class="bar"><i id="bar"></i></div><div class="pct"><span id="sync" class="sync"></span><span id="pct"></span></div><div class="kat" id="kat"></div>
     </div>
     <div class="card">
       <div class="cam"><div id="reader"></div><div class="ph" id="ph"><span class="ico">📷</span>Kamera belum aktif</div></div>
@@ -163,7 +163,7 @@ function renderStats() {
   const all = Object.values(DB); const total = all.length; const masuk = all.filter(p => p.status === 'Sudah masuk').length;
   $('sTotal').textContent = total; $('sIn').textContent = masuk; $('sOut').textContent = total - masuk;
   const p = total ? Math.round(masuk / total * 100) : 0;
-  $('bar').style.width = p + '%'; $('pct').textContent = p + '% peserta sudah hadir';
+  $('bar').style.width = p + '%'; $('pct').textContent = p + '% peserta sudah hadir';  const K = {};  all.forEach(x => { const r = String(x.kategori || 'Lainnya').trim(); const k = r.length <= 3 ? r.toUpperCase() : r.charAt(0).toUpperCase() + r.slice(1).toLowerCase(); K[k] = K[k] || [0, 0]; K[k][0]++; if (x.status === 'Sudah masuk') K[k][1]++; });  $('kat').innerHTML = Object.keys(K).sort().map(k => { const t = K[k][0], h = K[k][1], s = t - h; return '<div><b>' + esc(k) + '</b> ' + h + '/' + t + '<br>' + (s ? '<span class="ku">kurang ' + s + ' orang</span>' : '<span class="ok">✓ lengkap</span>') + '</div>'; }).join('');
 }
 function renderSync() {
   const el = $('sync'); if (!el) return;
