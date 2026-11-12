@@ -66,6 +66,12 @@
   .crop input[type=range]{width:240px;margin:16px auto 4px;display:block;accent-color:var(--green)}
   .crop .hint{font-size:12px;color:var(--mute);margin-bottom:14px}
   .crop .btns{display:grid;gap:8px}
+  .fl{display:block;font-size:12px;font-weight:700;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;margin:14px 0 0;text-align:left}
+  .fl input,.fl select,#fKatL{display:block;width:100%;margin-top:6px;padding:12px 13px;border:1px solid var(--line);border-radius:12px;font:16px Inter,sans-serif;text-transform:none;letter-spacing:0;color:var(--ink);background:#fff}
+  .fl input:focus,.fl select:focus,#fKatL:focus{outline:2px solid #bfe0cc;border-color:var(--green)}
+  #fKatL{margin-top:8px}
+  .fhint{font-size:12px;color:var(--mute);margin-top:5px;text-align:left;font-weight:500;text-transform:none;letter-spacing:0}
+  .fmsg{color:#b3261e;font-size:13px;font-weight:600;min-height:18px;margin:12px 0 8px;text-align:left}
   .nt{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(15,40,27,.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
   .nt.show{display:flex}
   .ntb{width:100%;max-width:380px;background:var(--cream);border-radius:26px;overflow:hidden;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);animation:ntin .35s cubic-bezier(.2,1.4,.4,1)}
@@ -102,6 +108,15 @@
   <nav id="nav" style="display:none"><a href="./">Scan</a><a href="tiket" class="on">Tiket</a></nav>
 </div><div class="stripe"></div></div>
 <div class="wrap" id="root"><div class="msg">Memuat…</div></div>
+<div class="modal" id="formM"><div class="box"><div class="crop">
+  <h3 id="fT">Tambah peserta</h3><div class="sub" id="fS">Data langsung masuk ke spreadsheet dan kode tiket dibuat otomatis.</div>
+  <label class="fl">Nama lengkap<input id="fNama" autocomplete="off" placeholder="cth. Budi Santoso"></label>
+  <label class="fl">Kategori<select id="fKat"></select></label>
+  <input id="fKatL" placeholder="Tulis kategori baru, cth. Dosen" style="display:none" autocomplete="off">
+  <label class="fl">No. WhatsApp<input id="fTelp" type="tel" inputmode="tel" autocomplete="off" placeholder="cth. 081234567890"><div class="fhint">Boleh 08… atau 62…, tanpa spasi. Kosongkan kalau belum ada.</div></label>
+  <div class="fmsg" id="fMsg"></div>
+  <div class="btns"><button class="btn full" id="fSave">Tambah &amp; buat tiket</button><button class="btn full ghost" id="fX">Batal</button></div>
+</div></div></div>
 <div class="nt" id="nt"><div class="ntb"><div class="nth"><div class="ntic" id="ntic"></div><div class="ntt" id="ntt"></div><div class="ntm" id="ntm"></div></div><div class="ntd"><div class="n" id="ntn"></div><p id="ntp"></p><button class="btn full" id="ntx">Oke, tutup</button></div></div></div>
 <input type="file" id="fotoIn" accept="image/*" style="display:none">
 <div class="modal" id="cropM"><div class="box"><div class="crop">
@@ -299,11 +314,13 @@ async function loadAll() {
     <div class="card" style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <div style="flex:1;min-width:200px"><b>Download semua e-ticket</b><div class="sub" style="margin:2px 0 0" id="zmsg">${LIST.length} file PNG dalam satu ZIP</div></div>
       <button class="btn gold" id="zip">⬇  Download ZIP</button></div>    <div class="card" style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">      <div style="flex:1;min-width:200px"><b>Reset kehadiran untuk hari berikutnya</b><div class="sub" style="margin:2px 0 0">Status semua peserta kembali "Belum". Data kehadiran sebelumnya otomatis disimpan di tab "Riwayat" spreadsheet.</div></div>      <button class="btn ghost" id="reset">↺  Reset kehadiran</button></div>
+    <div class="card" style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div style="flex:1;min-width:200px"><b>Tambah peserta baru</b><div class="sub" style="margin:2px 0 0">Isi nama, kategori &amp; nomor WhatsApp — langsung masuk spreadsheet dan dapat tiket.</div></div><button class="btn" id="addBtn">＋ Tambah peserta</button></div>
     <div class="card"><div class="tools"><input id="q" placeholder="Cari nama atau kode…"><select id="fk"><option value="">Semua kategori</option>${kats.map(k=>`<option>${esc(k)}</option>`).join('')}</select>
       <select id="fs"><option value="">Semua status</option><option value="in">Sudah hadir</option><option value="out">Belum hadir</option><option value="wa0">Belum di-WA</option><option value="wa1">Sudah di-WA</option></select></div>
       <div class="list" id="lst"></div></div>`;
   ['q','fk','fs'].forEach(id=>document.getElementById(id).oninput=renderList);
   renderList();
+  document.getElementById('addBtn').onclick = () => bukaForm(null);
   document.getElementById('reset').onclick = async () => { if (!confirm('Reset semua status kehadiran ke "Belum"? Data kehadiran saat ini akan disimpan dulu di tab Riwayat.')) return; const b = document.getElementById('reset'); b.disabled = true; b.textContent = 'Mereset…'; try { const r = await api({ action: 'reset', pin: PIN }); if (!r || !r.ok) throw new Error('gagal'); toast('Selesai — ' + r.arsip + ' data kehadiran disimpan ke Riwayat'); loadAll(); } catch (e) { toast('Gagal reset, coba lagi'); b.disabled = false; b.textContent = '↺  Reset kehadiran'; } };  document.getElementById('zip').onclick = async () => {
     const btn = document.getElementById('zip'), m = document.getElementById('zmsg'); btn.disabled = true;
     const A = await assets(); const zip = new JSZip();
@@ -324,8 +341,9 @@ function renderList(){
     return `<div class="row"><div class="av" style="background:${COLORS[i%COLORS.length]}">${FOTO[t.kode]?`<img src="${FOTO[t.kode]}" alt="">`:esc(initials(t.nama))}</div>
     <div class="who"><div class="nm">${esc(t.nama)}${isPanitia(t)?'<span class="tag-p">PANITIA</span>':''}</div><div class="kd">${esc(t.kode)}${t.kategori?' · '+esc(t.kategori):''}</div>${t.wa?`<div class="wainfo">✓ WA terkirim ${esc(t.wa)}<a data-u="${i}">batal</a></div>`:(wa?'<div class="wanot">Belum di-WA</div>':'')}</div>
     <span class="pill ${inn?'in':'out'} hide-m">${inn?'Hadir':'Belum'}</span>
-    <div class="acts">${isPanitia(t)?`<button class="btn sm foto ${FOTO[t.kode]?'has':''}" data-f="${i}">📷 ${FOTO[t.kode]?'Foto ✓':'Foto'}</button>`:''}<button class="btn sm ghost" data-v="${i}">Lihat</button><button class="btn sm" data-d="${i}">PNG</button>
+    <div class="acts">${isPanitia(t)?`<button class="btn sm foto ${FOTO[t.kode]?'has':''}" data-f="${i}">📷 ${FOTO[t.kode]?'Foto ✓':'Foto'}</button>`:''}<button class="btn sm ghost" data-e="${i}" title="Edit nama / kategori / nomor">✏️</button><button class="btn sm ghost" data-v="${i}">Lihat</button><button class="btn sm" data-d="${i}">PNG</button>
     ${wa?`<a class="btn sm ${t.wa?'wadone':'gold'}" data-w="${i}" href="${esc(wa)}" target="_blank" rel="noopener">${t.wa?'✓ WA':'WA'}</a>`:''}</div></div>`;}).join('');
+  el.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>bukaForm(LIST[+b.dataset.e]));
   el.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{CUR=LIST[+b.dataset.f]; if(FOTO[CUR.kode]){loadCropSrc(FOTO[CUR.kode]);} else pickFoto();});
   el.querySelectorAll('[data-w]').forEach(a=>a.onclick=e=>{const t=LIST[+a.dataset.w]; if(t.wa&&!confirm(t.nama+' sudah di-WA ('+t.wa+'). Kirim lagi?')){e.preventDefault();return;} setWA(t,1);});
   el.querySelectorAll('[data-u]').forEach(a=>a.onclick=()=>{const t=LIST[+a.dataset.u]; if(confirm('Hapus tanda "sudah di-WA" untuk '+t.nama+'?')) setWA(t,0);});
@@ -364,6 +382,38 @@ async function kirimFoto(simpan){ const b=document.getElementById('cropSave'); l
   b.disabled=false; b.textContent='Simpan foto';
   if(ok){ if(simpan) FOTO[CUR.kode]=data; else delete FOTO[CUR.kode]; CUR.foto=simpan; closeCrop(); renderList(); toast(simpan?'Foto '+CUR.nama+' tersimpan':'Foto dihapus'); }
 }
+let FORM_T=null;
+const $f=id=>document.getElementById(id);
+function bukaForm(t){ FORM_T=t;
+  $f('fT').textContent=t?'Edit data peserta':'Tambah peserta';
+  $f('fS').textContent=t?(t.kode+' · perubahan langsung tersimpan di spreadsheet'):'Data langsung masuk ke spreadsheet dan kode tiket dibuat otomatis.';
+  $f('fNama').value=t?(t.nama||''):''; $f('fTelp').value=t?(t.kontak||''):'';
+  const kats=[...new Set(['Umum','VIP','Panitia',...LIST.map(p=>String(p.kategori||'').trim()).filter(Boolean)])];
+  $f('fKat').innerHTML=kats.map(k=>'<option>'+esc(k)+'</option>').join('')+'<option value="__lain">＋ Kategori lain…</option>';
+  $f('fKat').value=(t&&t.kategori&&kats.includes(String(t.kategori).trim()))?String(t.kategori).trim():'Umum';
+  $f('fKatL').style.display='none'; $f('fKatL').value=''; $f('fMsg').textContent='';
+  $f('fSave').disabled=false; $f('fSave').textContent=t?'Simpan perubahan':'Tambah & buat tiket';
+  $f('formM').classList.add('show'); setTimeout(()=>$f('fNama').focus(),60);
+}
+function tutupForm(){ $f('formM').classList.remove('show'); }
+$f('fKat').onchange=()=>{ const l=$f('fKat').value==='__lain'; $f('fKatL').style.display=l?'':'none'; if(l) $f('fKatL').focus(); };
+$f('fX').onclick=tutupForm;
+$f('formM').onclick=e=>{ if(e.target.id==='formM') tutupForm(); };
+$f('fSave').onclick=async()=>{
+  const nama=$f('fNama').value.trim(), kat=($f('fKat').value==='__lain'?$f('fKatL').value:$f('fKat').value).trim();
+  const telp=$f('fTelp').value.replace(/[\s\-().]/g,'');
+  const msg=m=>{ $f('fMsg').textContent=m; };
+  if(!nama) return msg('Nama wajib diisi.');
+  if(!kat) return msg('Kategori wajib diisi.');
+  if(telp&&!/^(\+?62|0)8\d{7,12}$/.test(telp)) return msg('Nomor WhatsApp tidak valid. Contoh: 081234567890 atau 6281234567890.');
+  const dup=LIST.find(p=>p!==FORM_T&&String(p.nama).trim().toLowerCase()===nama.toLowerCase());
+  if(dup&&!FORM_T&&!confirm('Sudah ada peserta bernama "'+dup.nama+'" ('+dup.kode+'). Tetap tambahkan?')) return;
+  const b=$f('fSave'); b.disabled=true; b.textContent='Menyimpan…'; msg('');
+  let r=null; try{ r=await fetch(API,{method:'POST',body:JSON.stringify({action:FORM_T?'ubah':'tambah',pin:PIN,kode:FORM_T?FORM_T.kode:'',nama,kategori:kat,kontak:telp})}).then(x=>x.json()); }catch(e){}
+  if(!r||!r.ok){ b.disabled=false; b.textContent=FORM_T?'Simpan perubahan':'Tambah & buat tiket'; return msg((r&&r.err)||'Koneksi bermasalah. Cek daftar dulu sebelum mencoba lagi supaya tidak dobel.'); }
+  tutupForm(); toast(FORM_T?'Data '+nama+' diperbarui':'✓ '+nama+' ditambahkan · '+r.kode);
+  const q=r.kode||(FORM_T&&FORM_T.kode)||''; await loadAll(); if(q&&$f('q')){ $f('q').value=q; renderList(); }
+};
 function notif(kind,t,waktu){ const k=String(t.kategori||''), pan=/panitia/i.test(k), vip=/vip/i.test(k), nm=esc((ACARA&&ACARA.nama)||'ÔTELION IV');
   const m=document.getElementById('nt'); m.className='nt show'+(kind==='bad'?' bad':(vip&&!pan)?' vip':'');
   const set=(id,h)=>document.getElementById(id).innerHTML=h;
