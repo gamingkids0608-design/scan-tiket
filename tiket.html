@@ -206,7 +206,7 @@ const ticketLink = k => SITE + 'tiket.html?kode=' + encodeURIComponent(k);
 function waLink(kontak, t, acara){
   let num = String(kontak||'').replace(/\D/g,''); if(!num) return null;
   if(num.startsWith('0')) num='62'+num.slice(1); else if(num.startsWith('8')) num='62'+num;
-  const msg = `Halo ${t.nama}, berikut e-ticket kamu untuk ${acara.nama||'ÔTELION IV'}:\n${ticketLink(t.kode)}\n\nKode tiket: ${t.kode}\nSimpan & tunjukkan QR saat registrasi ulang. Sampai jumpa!`;
+  const msg = `Halo ${t.nama}, berikut e-ticket kamu untuk ${acara.nama||'ÔTELION IV'}:\n${ticketLink(t.kode)}\n\nKode tiket: ${t.kode}\nTips biar registrasi cepat:\n• Download/screenshot tiket ini sebelum datang\n• Naikkan kecerahan layar saat QR di-scan\n• Kalau QR sulit terbaca, sebutkan kode tiket ke panitia\n\nSampai jumpa!`;
   return 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg);
 }
 
