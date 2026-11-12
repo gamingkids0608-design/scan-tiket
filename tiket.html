@@ -54,6 +54,18 @@
   .list .row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #f1ece2}
   .list .row:last-child{border-bottom:0}
   .av{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-weight:800;color:#fff;flex:none}
+  .av img{width:100%;height:100%;object-fit:cover;border-radius:12px;display:block}
+  .btn.sm.foto{background:#fff;color:var(--maroon);border:1px solid #ecd2c9}
+  .btn.sm.foto.has{color:var(--green);border-color:#bfe0cc}
+  .tag-p{display:inline-block;font:700 10px Inter,sans-serif;letter-spacing:.06em;background:#f6e3dc;color:var(--maroon);padding:2px 7px;border-radius:999px;margin-left:6px;vertical-align:2px}
+  .crop{background:#fff;border-radius:22px;padding:20px;text-align:center}
+  .crop h3{margin:0;font:700 22px 'Cormorant Garamond',serif;color:var(--green)}
+  .crop .sub{margin:2px 0 14px}
+  .cwrap{position:relative;width:280px;height:280px;margin:0 auto;border-radius:50%;overflow:hidden;box-shadow:0 0 0 4px #fff,0 0 0 6px var(--gold);touch-action:none;cursor:grab;background:#eee}
+  .cwrap canvas{width:280px;height:280px;display:block}
+  .crop input[type=range]{width:240px;margin:16px auto 4px;display:block;accent-color:var(--green)}
+  .crop .hint{font-size:12px;color:var(--mute);margin-bottom:14px}
+  .crop .btns{display:grid;gap:8px}
   .who{flex:1;min-width:0}
   .who .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .who .kd{font:700 12px 'JetBrains Mono',monospace;color:var(--mute)}
@@ -77,6 +89,14 @@
   <nav id="nav" style="display:none"><a href="./">Scan</a><a href="tiket" class="on">Tiket</a></nav>
 </div><div class="stripe"></div></div>
 <div class="wrap" id="root"><div class="msg">Memuat…</div></div>
+<input type="file" id="fotoIn" accept="image/*" style="display:none">
+<div class="modal" id="cropM"><div class="box"><div class="crop">
+  <h3 id="cropT">Foto panitia</h3><div class="sub" id="cropS">Atur posisi wajah di tengah lingkaran</div>
+  <div class="cwrap" id="cwrap"><canvas id="cropC" width="560" height="560"></canvas></div>
+  <input type="range" id="cropZ" min="1" max="4" step="0.01" value="1">
+  <div class="hint">Geser foto untuk mengatur posisi · tarik slider untuk zoom</div>
+  <div class="btns"><button class="btn full" id="cropSave">Simpan foto</button><button class="btn full ghost" id="cropPick">Pilih foto lain</button><button class="btn full ghost" id="cropDel" style="color:#b3261e">Hapus foto</button><button class="btn full ghost" id="cropX">Batal</button></div>
+</div></div></div>
 <div class="modal" id="modal"><div class="box"><div class="mhead"><span>E-Ticket</span><button class="mclose" id="mclose" aria-label="Tutup">✕</button></div><div class="one" id="mbody"></div></div></div>
 <div class="toast" id="toast"></div>
 
@@ -254,6 +274,7 @@ async function loadAll() {
   try { localStorage.setItem('tiketPin', PIN); } catch (e) {}
   document.getElementById('nav').style.display='';
   LIST = r.peserta || []; ACARA = r.acara || {};
+  if (LIST.some(t=>t.foto)) loadFotos(); else FOTO={};
   const hadir = LIST.filter(p=>p.status==='Sudah masuk').length;
   const kats = [...new Set(LIST.map(p=>p.kategori).filter(Boolean))];
   root.innerHTML = `<h1>Tiket Peserta</h1><div class="sub">${esc(ACARA.nama||'')} · ${esc(ACARA.subjudul||'')}</div>
@@ -284,16 +305,48 @@ function renderList(){
   const el=document.getElementById('lst');
   waStat(); if(!rows.length){el.innerHTML='<div class="msg">Tidak ada peserta yang cocok.</div>';return;}
   el.innerHTML=rows.map(({t,i})=>{const wa=waLink(t.kontak,t,ACARA); const inn=t.status==='Sudah masuk';
-    return `<div class="row"><div class="av" style="background:${COLORS[i%COLORS.length]}">${esc(initials(t.nama))}</div>
-    <div class="who"><div class="nm">${esc(t.nama)}</div><div class="kd">${esc(t.kode)}${t.kategori?' · '+esc(t.kategori):''}</div>${t.wa?`<div class="wainfo">✓ WA terkirim ${esc(t.wa)}<a data-u="${i}">batal</a></div>`:(wa?'<div class="wanot">Belum di-WA</div>':'')}</div>
+    return `<div class="row"><div class="av" style="background:${COLORS[i%COLORS.length]}">${FOTO[t.kode]?`<img src="${FOTO[t.kode]}" alt="">`:esc(initials(t.nama))}</div>
+    <div class="who"><div class="nm">${esc(t.nama)}${isPanitia(t)?'<span class="tag-p">PANITIA</span>':''}</div><div class="kd">${esc(t.kode)}${t.kategori?' · '+esc(t.kategori):''}</div>${t.wa?`<div class="wainfo">✓ WA terkirim ${esc(t.wa)}<a data-u="${i}">batal</a></div>`:(wa?'<div class="wanot">Belum di-WA</div>':'')}</div>
     <span class="pill ${inn?'in':'out'} hide-m">${inn?'Hadir':'Belum'}</span>
-    <div class="acts"><button class="btn sm ghost" data-v="${i}">Lihat</button><button class="btn sm" data-d="${i}">PNG</button>
+    <div class="acts">${isPanitia(t)?`<button class="btn sm foto ${FOTO[t.kode]?'has':''}" data-f="${i}">📷 ${FOTO[t.kode]?'Foto ✓':'Foto'}</button>`:''}<button class="btn sm ghost" data-v="${i}">Lihat</button><button class="btn sm" data-d="${i}">PNG</button>
     ${wa?`<a class="btn sm ${t.wa?'wadone':'gold'}" data-w="${i}" href="${esc(wa)}" target="_blank" rel="noopener">${t.wa?'✓ WA':'WA'}</a>`:''}</div></div>`;}).join('');
+  el.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{CUR=LIST[+b.dataset.f]; if(FOTO[CUR.kode]){loadCropSrc(FOTO[CUR.kode]);} else pickFoto();});
   el.querySelectorAll('[data-w]').forEach(a=>a.onclick=e=>{const t=LIST[+a.dataset.w]; if(t.wa&&!confirm(t.nama+' sudah di-WA ('+t.wa+'). Kirim lagi?')){e.preventDefault();return;} setWA(t,1);});
   el.querySelectorAll('[data-u]').forEach(a=>a.onclick=()=>{const t=LIST[+a.dataset.u]; if(confirm('Hapus tanda "sudah di-WA" untuk '+t.nama+'?')) setWA(t,0);});
   el.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{const t=LIST[+b.dataset.d]; download(drawTicket(t,ACARA,await assets()),fileName(t));});
   waStat();
   el.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{const t=LIST[+b.dataset.v]; const m=document.getElementById('modal'); m.classList.add('show'); history.pushState({m:1},''); renderOne(document.getElementById('mbody'),t,ACARA,true);});
+}
+let FOTO={}, CUR=null, CIMG=null, cz=1, cx=0, cy=0;
+const isPanitia = t => /panitia/i.test(String(t.kategori||''));
+async function loadFotos(){ try{ const r=await api({action:'fotos',pin:PIN}); if(r&&r.foto){FOTO=r.foto; if(document.getElementById('lst')) renderList();} }catch(e){} }
+function pickFoto(){ const f=document.getElementById('fotoIn'); f.value=''; f.click(); }
+document.getElementById('fotoIn').onchange=e=>{ const file=e.target.files&&e.target.files[0]; if(!file||!CUR) return; const rd=new FileReader(); rd.onload=()=>loadCropSrc(rd.result); rd.readAsDataURL(file); };
+function loadCropSrc(src){ const im=new Image(); im.onload=()=>{ CIMG=im; cz=1; cx=0; const C=560, s=Math.max(C/im.width,C/im.height), h=im.height*s; cy=im.height>im.width*1.15?(h-C)/2*0.85:0; document.getElementById('cropZ').value=1; openCrop(); }; im.src=src; }
+function openCrop(){ document.getElementById('cropT').textContent='Foto · '+CUR.nama; document.getElementById('cropDel').style.display=FOTO[CUR.kode]?'':'none'; document.getElementById('cropM').classList.add('show'); drawCrop(); }
+function closeCrop(){ document.getElementById('cropM').classList.remove('show'); }
+function drawCrop(g,C){ g=g||document.getElementById('cropC').getContext('2d'); C=C||560; const k=C/560; const s=Math.max(560/CIMG.width,560/CIMG.height)*cz, w=CIMG.width*s, h=CIMG.height*s;
+  cx=Math.max(-(w-560)/2,Math.min((w-560)/2,cx)); cy=Math.max(-(h-560)/2,Math.min((h-560)/2,cy));
+  g.fillStyle='#eee'; g.fillRect(0,0,C,C); g.imageSmoothingQuality='high'; g.drawImage(CIMG,(280-w/2+cx)*k,(280-h/2+cy)*k,w*k,h*k); }
+(()=>{ const w=document.getElementById('cwrap'); let d=null;
+  w.onpointerdown=e=>{d={x:e.clientX,y:e.clientY,cx,cy}; w.setPointerCapture(e.pointerId);};
+  w.onpointermove=e=>{ if(!d) return; cx=d.cx+(e.clientX-d.x)*2; cy=d.cy+(e.clientY-d.y)*2; drawCrop(); };
+  w.onpointerup=w.onpointercancel=()=>d=null;
+  document.getElementById('cropZ').oninput=e=>{cz=+e.target.value; drawCrop();};
+  document.getElementById('cropX').onclick=closeCrop;
+  document.getElementById('cropPick').onclick=pickFoto;
+  document.getElementById('cropM').onclick=e=>{ if(e.target.id==='cropM') closeCrop(); };
+  document.getElementById('cropSave').onclick=()=>kirimFoto(true);
+  document.getElementById('cropDel').onclick=()=>{ if(confirm('Hapus foto '+CUR.nama+'?')) kirimFoto(false); };
+})();
+async function kirimFoto(simpan){ const b=document.getElementById('cropSave'); let data='';
+  if(simpan){ const c=document.createElement('canvas'); c.width=c.height=320; drawCrop(c.getContext('2d'),320); let q=.85; data=c.toDataURL('image/jpeg',q); while(data.length>46000&&q>.4){q-=.1; data=c.toDataURL('image/jpeg',q);} }
+  b.disabled=true; b.textContent='Menyimpan…';
+  let ok=false;
+  try{ const r=await fetch(API,{method:'POST',body:JSON.stringify({action:'foto',pin:PIN,kode:CUR.kode,data})}).then(r=>r.json()); ok=!!(r&&r.ok); if(!ok) toast('Gagal: '+((r&&r.err)||'coba lagi')); }
+  catch(e){ try{ const r=await api({action:'fotos',pin:PIN}); ok=simpan?(r&&r.foto&&r.foto[CUR.kode]===data):!(r&&r.foto&&r.foto[CUR.kode]); }catch(e2){} if(!ok) toast('Gagal menyimpan foto, cek internet'); }
+  b.disabled=false; b.textContent='Simpan foto';
+  if(ok){ if(simpan) FOTO[CUR.kode]=data; else delete FOTO[CUR.kode]; CUR.foto=simpan; closeCrop(); renderList(); toast(simpan?'Foto '+CUR.nama+' tersimpan':'Foto dihapus'); }
 }
 function waStat(){const el=document.getElementById('wastat'); if(!el) return; const bisa=LIST.filter(t=>waLink(t.kontak,t,ACARA)).length, sudah=LIST.filter(t=>t.wa).length; el.className='stat'+(sudah>=bisa&&bisa?' g':''); el.innerHTML=`<b>${sudah}<small style="font-size:15px;color:var(--mute)">/${bisa}</small></b><span>Sudah di-WA</span>`;}
 async function setWA(t,on){const old=t.wa; t.wa=on?new Date().toTimeString().slice(0,5)+', '+String(new Date().getDate()).padStart(2,'0')+'/'+String(new Date().getMonth()+1).padStart(2,'0'):''; renderList();
