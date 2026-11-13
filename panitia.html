@@ -88,13 +88,14 @@ function showSaved(t) {
   $('sNama').textContent = t.nama || ''; $('sKode').textContent = t.kode; $('open').href = link(t.kode);
 }
 async function ambil() {
+  if ($('go').disabled) return;
   const nim = $('nim').value.replace(/\D/g, '');
   const msg = $('msg'); msg.className = 'msg';
   if (nim.length < 6) { msg.className = 'msg err'; msg.textContent = 'NIM belum lengkap.'; return; }
   const b = $('go'); b.disabled = true; b.textContent = 'Mencari…'; msg.textContent = '';
   try {
     const r = await api({ action: 'ambil', nim });
-    if (r && r.status === 'ok') { const t = { kode: r.kode, nama: r.nama }; set(t); location.href = link(t.kode); return; }
+    if (r && r.status === 'ok') { const t = { kode: r.kode, nama: r.nama }; set(t); try { const C = JSON.parse(localStorage.getItem('tiketCache') || '{}') || {}; C[r.kode] = { tiket: { kode: r.kode, nama: r.nama, kategori: r.kategori || 'Panitia' }, acara: r.acara || {} }; localStorage.setItem('tiketCache', JSON.stringify(C)); } catch (e) {} location.href = link(t.kode); return; }
     msg.className = 'msg err';
     msg.textContent = 'NIM ini tidak terdaftar sebagai panitia. Cek lagi, atau hubungi admin panitia.';
   } catch (e) {
@@ -105,7 +106,9 @@ async function ambil() {
 $('go').onclick = ambil;
 $('nim').addEventListener('keydown', e => { if (e.key === 'Enter') ambil(); });
 $('ganti').onclick = () => { set(null); $('saved').classList.add('hide'); $('form').classList.remove('hide'); $('nim').value = ''; $('nim').focus(); };
+$('nim').addEventListener('input', () => { if ($('nim').value.replace(/\D/g, '').length === 10) ambil(); });
 const saved = get(); if (saved && saved.kode) showSaved(saved);
+api({ action: 'ambil', nim: '0000000' }).catch(() => {});
 </script>
 </body>
 </html>
