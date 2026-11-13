@@ -275,15 +275,20 @@ async function renderOne(el, t, acara, withShare){
   }
 }
 async function showOne(kode) {
+  let C = {}; try { C = JSON.parse(localStorage.getItem('tiketCache') || '{}') || {}; } catch (e) {}
+  const c = C[kode];
+  const tampil = async (t, acara) => { root.innerHTML = '<div class="one" id="one"><div class="msg">Menyiapkan tiket…</div></div>'; ACARA = acara || {}; await renderOne(document.getElementById('one'), t, ACARA, false); };
+  let shown = false;
+  if (c && c.tiket) { try { await tampil(c.tiket, c.acara); shown = true; pantau(c.tiket); } catch (e) {} }
   try {
     const r = await api({ action: 'tiket', kode });
-    if (!r || r.status !== 'ok') { root.innerHTML = `<div class="card msg err">Tiket <b>${esc(kode)}</b> tidak ditemukan.</div>`; return; }
-    root.innerHTML = `<div class="one" id="one"><div class="msg">Menyiapkan tiket…</div></div>`;
-    ACARA = r.acara || {};
-    await renderOne(document.getElementById('one'), r.tiket, r.acara || {}, false);
-    pantau(r.tiket);
-  } catch (e) { root.innerHTML = `<div class="card msg err">Gagal memuat tiket. Cek internet lalu muat ulang.</div>`; }
+    if (!r || r.status !== 'ok') { if (!shown) root.innerHTML = `<div class="card msg err">Tiket <b>${esc(kode)}</b> tidak ditemukan.</div>`; return; }
+    const beda = !c || JSON.stringify(c.tiket) !== JSON.stringify(r.tiket) || JSON.stringify(c.acara || {}) !== JSON.stringify(r.acara || {});
+    C[kode] = { tiket: r.tiket, acara: r.acara || {} }; try { localStorage.setItem('tiketCache', JSON.stringify(C)); } catch (e) {}
+    if (!shown) { await tampil(r.tiket, r.acara); pantau(r.tiket); } else if (beda) { await tampil(r.tiket, r.acara); }
+  } catch (e) { if (!shown) root.innerHTML = `<div class="card msg err">Gagal memuat tiket. Cek internet lalu muat ulang.</div>`; }
 }
+
 
 // ---------- admin ----------
 let PIN = ''; try { PIN = localStorage.getItem('tiketPin') || ''; } catch (e) {}
