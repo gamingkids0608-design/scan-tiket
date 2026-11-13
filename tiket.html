@@ -186,7 +186,7 @@ function kawung(g,x0,y0,w,h,step,col){ // motif batik kawung sederhana
   } g.restore();
 }
 function drawTicket(t, acara, A) {
-  const W=1000, H=1780, R=40, c=document.createElement('canvas'); c.width=W; c.height=H;
+  const W=1000, H=2000, R=40, c=document.createElement('canvas'); c.width=W; c.height=H;
   const g=c.getContext('2d'); const CUT=H-300;
   g.fillStyle='rgba(0,0,0,0)'; g.clearRect(0,0,W,H);
   // bentuk tiket dengan lekukan sobekan
@@ -227,7 +227,7 @@ function drawTicket(t, acara, A) {
 
   // QR dengan bingkai sudut emas
   const q=qrcode(0,'M'); q.addData(t.kode); q.make(); const n=q.getModuleCount();
-  const space=CUT-y-60; const qsize=Math.min(420,space-60); const cell=Math.floor(qsize/n), qs=cell*n, pad=30, box=qs+pad*2;
+  const space=CUT-y-60; const qsize=Math.min(620,space-50); const cell=Math.floor(qsize/n), qs=cell*n, pad=30, box=qs+pad*2;
   const bx=(W-box)/2, by=y+(space-box)/2+10;
   g.fillStyle='#fff'; rr(g,bx,by,box,box,24); g.fill(); g.strokeStyle='#efe7d6'; g.lineWidth=2; g.stroke();
   g.fillStyle='#14201a'; for(let r=0;r<n;r++)for(let k=0;k<n;k++) if(q.isDark(r,k)) g.fillRect(bx+pad+k*cell,by+pad+r*cell,cell,cell);
