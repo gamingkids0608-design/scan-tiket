@@ -107,6 +107,7 @@ $('go').onclick = ambil;
 $('nim').addEventListener('keydown', e => { if (e.key === 'Enter') ambil(); });
 $('ganti').onclick = () => { set(null); $('saved').classList.add('hide'); $('form').classList.remove('hide'); $('nim').value = ''; $('nim').focus(); };
 $('nim').addEventListener('input', () => { if ($('nim').value.replace(/\D/g, '').length === 10) ambil(); });
+window.addEventListener('pageshow', () => { const b = $('go'); b.disabled = false; b.textContent = 'Ambil tiket'; $('msg').textContent = ''; const t = get(); if (t && t.kode) showSaved(t); });
 const saved = get(); if (saved && saved.kode) showSaved(saved);
 api({ action: 'ambil', nim: '0000000' }).catch(() => {});
 </script>
